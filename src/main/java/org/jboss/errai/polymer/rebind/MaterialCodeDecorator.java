@@ -45,6 +45,7 @@ import static org.jboss.errai.codegen.util.Stmt.*;
 
 /**
  * Generates the code required for {@link Templated} classes.
+ *
  * @author Dmitrii Tikhomirov <chani@me.com>
  */
 @CodeDecorator
