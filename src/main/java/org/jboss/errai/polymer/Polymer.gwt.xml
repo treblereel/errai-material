@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE module PUBLIC "-//Google Inc.//DTD Google Web Toolkit 2.8.0//EN"
+        "http://gwtproject.org/doctype/2.8.0/gwt-module.dtd">
+<module rename-to="Polymer">
+    <inherits name="org.jboss.errai.ioc.Container" />
+    <inherits name="org.jboss.errai.common.ErraiCommon" />
+    <inherits name="org.jboss.errai.enterprise.CDI" />
+
+    <inherits name="gwt.material.design.GwtMaterialWithJQuery"/>
+    <inherits name="gwt.material.design.GwtMaterialDesignBasic" />
+    <inherits name="gwt.material.design.addins.GwtMaterialAddins" />
+    <inherits name="gwt.material.design.themes.ThemeGreen"/>
+    <inherits name="gwt.material.design.jquery.JQuery" />
+
+    <source path="client" />
+    <source path="shared" />
+</module>
