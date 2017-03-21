@@ -14,22 +14,29 @@
  *
  */
 
-package org.jboss.errai.polymer.shared;
+package org.jboss.errai.polymer.client.local;
 
-import com.google.gwt.user.client.ui.Widget;
+import java.util.EnumSet;
 
 /**
  * @author Dmitrii Tikhomirov <chani@me.com>
- *
- * Created by treblereel on 3/10/17.
+ *         Created by treblereel on 3/21/17.
  */
-public interface MaterialWidgetFactory {
+public class GwtMaterialUtil {
 
-    java.util.Optional<MaterialWidgetDefinition> getWidgetDefIfExist(String tag);
+    public static void processWidgetProperties(){
 
-    java.util.Optional<Tuple<String,Class>> getMethodDefIfExist(String tag, String method);
-
-    Widget invoke(String tag);
+    }
 
 
+    public static Class primitiveToBoxed(Class clazz){
+            if (clazz.equals(boolean.class)) {
+                return Boolean.class;
+            } else if (clazz.equals(double.class)) {
+                return Double.class;
+            } else if (clazz.equals(int.class)) {
+                return Integer.class;
+            }
+            return clazz;
+    }
 }

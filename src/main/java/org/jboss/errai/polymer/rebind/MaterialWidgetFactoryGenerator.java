@@ -26,9 +26,10 @@ import gwt.material.design.client.base.MaterialWidget;
 import gwt.material.design.client.constants.Type;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.reflect.ConstructorUtils;
-import org.jboss.errai.polymer.shared.MaterialWidgetDefinition;
-import org.jboss.errai.polymer.shared.MaterialWidgetFactory;
-import org.jboss.errai.polymer.shared.Tuple;
+import org.jboss.errai.polymer.client.local.GwtMaterialUtil;
+import org.jboss.errai.polymer.client.local.MaterialMethodDefinition;
+import org.jboss.errai.polymer.client.local.MaterialWidgetDefinition;
+import org.jboss.errai.polymer.client.local.MaterialWidgetFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,12 +41,13 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.function.BiConsumer;
 
 
 /**
  * @author Dmitrii Tikhomirov <chani@me.com>
- *
- * Created by treblereel on 3/9/17.
+ *         <p>
+ *         Created by treblereel on 3/9/17.
  */
 public class MaterialWidgetFactoryGenerator {
 
@@ -56,11 +58,13 @@ public class MaterialWidgetFactoryGenerator {
     private static final String GWT_MATERIAL_FACTORY_PACKAGE_NAME = "org.jboss.errai.polymer.shared";
     private static final String GWT_MATERIAL_FACTORY_CLASS_NAME = "MaterialWidgetFactoryImpl";
     private final Set<String> defaultMethods = new HashSet<>();
+    private final Map<String, MethodHolder> allMethods = new HashMap<>();
+
     private JMethod invoke;
 
-    private static final String[] BLACKLISTED_PROPERTIES = {"FlexAlignItems", "TargetHistoryToken", "Activates", "InitialClasses",
+    private static final String[] BLACKLISTED_PROPERTIES = {"FlexAlignItems", "TargetHistoryToken", "InitialClasses",
             "Id", "AccessKey", "Scrollspy", "DataAttribute", "ErrorHandler", "ErrorHandlerType", "Validators", "FlexJustifyContent",
-            "Class", "Input", "Fullscreen", "Parent"};
+            "Class", "Input", "Fullscreen", "Parent", "Label", "StylePrimaryName", "StyleName"};
 
 
     public MaterialWidgetFactoryGenerator() {
@@ -102,13 +106,13 @@ public class MaterialWidgetFactoryGenerator {
         jc.field(JMod.PRIVATE, fieldClazz, detailName, JExpr._new(defFieldClazz));
 
 
-        constractInvokeMethodDeclaration(jCodeModel, jc);
+        constructInvokeMethodDeclaration(jCodeModel, jc);
 
         JClass defaultMethodsClass = jCodeModel.ref(Map.class);
-        JClass fieldDefaultMethodsClass = defaultMethodsClass.narrow(jCodeModel.ref(String.class), jCodeModel.ref(Class.class));
+        JClass fieldDefaultMethodsClass = defaultMethodsClass.narrow(jCodeModel.ref(String.class), jCodeModel.ref(MaterialMethodDefinition.class));
 
         JClass defDefaultMethodsClass = jCodeModel.ref(HashMap.class);
-        JClass defFieldDefaultMethodsClass = defDefaultMethodsClass.narrow(jCodeModel.ref(String.class), jCodeModel.ref(Class.class));
+        JClass defFieldDefaultMethodsClass = defDefaultMethodsClass.narrow(jCodeModel.ref(String.class), jCodeModel.ref(MaterialMethodDefinition.class));
         jc.field(JMod.PRIVATE, fieldDefaultMethodsClass, "defaultMethods", JExpr._new(defFieldDefaultMethodsClass));
 
         constructGetWidgetDefIfExist(jc, jCodeModel);
@@ -122,6 +126,8 @@ public class MaterialWidgetFactoryGenerator {
 
         constractInvokeMethodBody(jCodeModel);
 
+        processNativeMethods(jc);
+
         jCodeModel.build(new File(DEFAULT_BUILD_LOCATION));
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -129,11 +135,63 @@ public class MaterialWidgetFactoryGenerator {
         jCodeModel.build(codeWriter);
     }
 
-    private void constractInvokeMethodDeclaration(JCodeModel jCodeModel, JDefinedClass jc) {
-        invoke = jc.method(JMod.PUBLIC, Widget.class, "invoke");
+    private void processNativeMethods(JDefinedClass jc) {
+        allMethods.entrySet().stream()
+                .sorted(Map.Entry.<String, MethodHolder>comparingByKey())
+                .forEach((k) -> {
+                    generateNativeMethod(jc, k.getValue());
+                });
+    }
+
+    private void generateNativeMethod(JDefinedClass jc, MethodHolder holder) {
+        if (Modifier.isAbstract(holder.iface.getModifiers()) && !holder.iface.isInterface()) {
+            String methodName = generateNativeMethodName(holder.method) +holder.widget.getSimpleName();
+            jc.direct("    public void " + methodName + "(" + MaterialWidget.class.getCanonicalName() + " x, " + holder.param.getCanonicalName() + " y){  (("+holder.iface.getCanonicalName()+")x)."+holder.name+"(y);       }\n");
+
+        } else {
+            jc.direct("    public native void " + generateNativeMethodName(holder.method) + "(Object x, Object s) /*-{\nx.@" + holder.iface.getCanonicalName() + "::" + holder.name + "(" + doJNDIMethodSignature(holder.param) + ")(s);\n}-*/;\n");
+        }
+
+    }
+
+    private String doJNDIMethodSignature(Class param) {
+        String result = "";
+        if (param.isPrimitive()) {
+            if (param.equals(boolean.class)) {
+                result = "Z";
+            } else if (param.equals(int.class)) {
+                result = "I";
+            } else if (param.equals(long.class)) {
+                throw new RuntimeException("long primitive is not supported as method parameter");
+            } else if (param.equals(double.class)) {
+                result = "D";
+            }
+        } else {
+            if (param.getEnclosingClass() != null) {
+                result = doJNDIEnumMethodSignature(param);
+            } else {
+                result = "L" + param.getCanonicalName().replaceAll("\\.", "/") + ";";
+            }
+        }
+        return result;
+    }
+
+    private String doJNDIEnumMethodSignature(Class param) {
+        StringBuilder sb = new StringBuilder("L");
+        sb.append(param.getPackage().getName().replaceAll("\\.", "/"));
+        sb.append("/");
+        sb.append(param.getEnclosingClass().getSimpleName());
+        sb.append("$");
+        sb.append(param.getSimpleName());
+        sb.append(";");
+        return sb.toString();
+    }
+
+    private void constructInvokeMethodDeclaration(JCodeModel jCodeModel, JDefinedClass jc) {
+        invoke = jc.method(JMod.PUBLIC, MaterialWidget.class, "invoke");
         invoke.param(String.class, "tag");
         invoke.annotate(Override.class);
-        invoke.body().decl(jCodeModel.ref(Widget.class), "result").init(JExpr._null());
+        invoke.body().decl(jCodeModel.ref(MaterialWidget.class), "result").init(JExpr._null());
         invoke.body().assign(JExpr.ref("tag"), JExpr.ref("tag").invoke("toLowerCase").invoke("replaceAll").arg("-").arg(""));
     }
 
@@ -180,8 +238,8 @@ public class MaterialWidgetFactoryGenerator {
 
     private void constructGetMethodDefIfExist(JDefinedClass jc, JCodeModel jCodeModel) {
 
-        JType returnTuple = jCodeModel.ref(Tuple.class).narrow(String.class, Class.class);
-        JType returnType = jCodeModel.ref(Optional.class).narrow(returnTuple);
+        JType returnValue = jCodeModel.ref(MaterialMethodDefinition.class);
+        JType returnType = jCodeModel.ref(Optional.class).narrow(returnValue);
         JClass optional = jCodeModel.directClass(Optional.class.getCanonicalName());
 
         JMethod method = jc.method(JMod.PUBLIC, returnType, "getMethodDefIfExist");
@@ -190,6 +248,7 @@ public class MaterialWidgetFactoryGenerator {
         method.annotate(Override.class);
 
         method.body().assign(JExpr.ref("tag"), JExpr.ref("tag").invoke("toLowerCase").invoke("replaceAll").arg("-").arg(""));
+        method.body().assign(JExpr.ref("method"), JExpr.ref("method").invoke("toLowerCase"));
 
         method.body()._if(JExpr.ref("widgets").invoke("containsKey").arg(JExpr.ref("tag")).eq(JExpr.lit(false)))._then()._return(optional.staticInvoke("empty"));
 
@@ -197,18 +256,16 @@ public class MaterialWidgetFactoryGenerator {
         method.body()._if(JExpr.ref("widgets").invoke("get").arg(JExpr.ref("tag"))
                 .invoke("getMethods")
                 .invoke("containsKey")
-                .arg(JExpr.ref("method")))._then()._return(optional.staticInvoke("of").arg(JExpr._new(jCodeModel.ref(Tuple.class)
-                .narrow(String.class).narrow(Class.class)).arg(JExpr.ref("tag")).arg(JExpr.ref("widgets")
+                .arg(JExpr.ref("method")))._then()._return(optional.staticInvoke("of").arg(JExpr.ref("widgets")
                 .invoke("get").arg(JExpr.ref("tag"))
                 .invoke("getMethods")
                 .invoke("get")
-                .arg(JExpr.ref("method")))));
+                .arg(JExpr.ref("method"))));
 
         method.body()._if(JExpr.ref("defaultMethods").invoke("containsKey").arg(JExpr.ref("tag")))
-                ._then()._return(optional.staticInvoke("of").arg(JExpr._new(jCodeModel.ref(Tuple.class)
-                .narrow(String.class).narrow(Class.class)).arg(JExpr.ref("tag")).arg(JExpr.ref("defaultMethods")
+                ._then()._return(optional.staticInvoke("of").arg(JExpr.ref("defaultMethods")
                 .invoke("get")
-                .arg(JExpr.ref("tag").invoke("toLowerCase")))));
+                .arg(JExpr.ref("tag").invoke("toLowerCase"))));
 
 
         method.body()._return(optional.staticInvoke("empty"));
@@ -228,16 +285,18 @@ public class MaterialWidgetFactoryGenerator {
 
         final ClassLoader loader = Thread.currentThread().getContextClassLoader();
         ImmutableSet<ClassPath.ClassInfo> topLevelClasses = com.google.gwt.thirdparty.guava.common.reflect.ClassPath.from(loader).getTopLevelClasses();
-        Set<Method> methods = new HashSet<>();
-        Arrays.stream(MaterialWidget.class.getDeclaredMethods()).forEach(m -> methods.add(m));
-        generateMaterialBaseWidgetMethodsDeclaretion(jc, jCodeModel, constructor, methods);
 
-        for (final com.google.gwt.thirdparty.guava.common.reflect.ClassPath.ClassInfo info : topLevelClasses) {
-            if (isWidgetSupported(info)) {
-                if (info.load().getCanonicalName().equals(GWT_MATERIAL_COMMON_PACKAGE + info.load().getSimpleName())) {
-                    Set<Method> properties = new HashSet<>();
-                    processMethods(info, properties);
-                    generateWidgetDeclaretion(jc, jCodeModel, constructor, info.load(), properties, isExtendsMaterialWidget(info.load()));
+        Set<Method> properties = new HashSet<>();
+        processMethods(MaterialWidget.class, properties);
+        generateWidgetDeclaretion(jc, jCodeModel, constructor, MaterialWidget.class, properties, isExtendsMaterialWidget(MaterialWidget.class));
+
+        for (final com.google.gwt.thirdparty.guava.common.reflect.ClassPath.ClassInfo classInfo : topLevelClasses) {
+            if (isWidgetSupported(classInfo)) {
+                if (classInfo.load().equals(MaterialWidget.class)) continue;
+                if (classInfo.load().getCanonicalName().equals(GWT_MATERIAL_COMMON_PACKAGE + classInfo.load().getSimpleName())) {
+                    Set<Method> methods = new HashSet<>();
+                    processMethods(classInfo.load(), methods);
+                    generateWidgetDeclaretion(jc, jCodeModel, constructor, classInfo.load(), methods, isExtendsMaterialWidget(classInfo.load()));
                 }
             }
         }
@@ -247,73 +306,44 @@ public class MaterialWidgetFactoryGenerator {
         if (!info.getName().startsWith(GWT_MATERIAL_COMMON_PACKAGE)) {
             return false;
         }
-        return !Modifier.isAbstract(info.getClass().getModifiers()) && findParent(info.load()) && hasParameterlessConstructor(info.load());
+        return !Modifier.isAbstract(info.getClass().getModifiers()) && isExtendsMaterialWidget(info.load()) && hasParameterlessConstructor(info.load());
     }
 
-    private boolean findParent(Class<?> clazz) {
-        if (clazz.getCanonicalName().equals(MaterialWidget.class.getCanonicalName()) ||
-                clazz.getCanonicalName().equals(MaterialWidget.class.getCanonicalName())) {
-            return true;
-        } else if (clazz.getCanonicalName().equals(Object.class.getCanonicalName())) {
-            return false;
+    private JExpression doJExpressionMethodDefinition(JCodeModel jCodeModel, Class clazz) {
+        if (clazz.isPrimitive()) {
+            return JExpr.direct(clazz.getCanonicalName() + ".class");
         }
-        return findParent(clazz.getSuperclass());
-
+        return jCodeModel.ref(clazz).dotclass();
     }
 
-    private void generateMaterialBaseWidgetMethodsDeclaretion(JDefinedClass jc, JCodeModel jCodeModel, JMethod constructor, Set<Method> methods) {
-        List<String> blackList = Arrays.asList(BLACKLISTED_PROPERTIES);
-        JMethod method = jc.method(JMod.PRIVATE, void.class, "addMaterialBaseWidgetMethods");
-        for (Method s : new HashSet<>(methods)) {
-            if (s.getName().startsWith("set")) {
-                String candidate = s.getName().replace("set", "");
-                Class<?>[] pType = s.getParameterTypes();
-                Class param = pType[0];
-                if (!blackList.contains(candidate) &&
-                        !param.getCanonicalName().equals(Type.class.getCanonicalName())) {
-                    param = processMethodSignature(param);
-                    method.body().add(JExpr._this().ref("defaultMethods").invoke("put").arg(candidate).arg(jCodeModel.ref(param).dotclass()));
-                    defaultMethods.add(candidate);
 
-                }
-            }
-        }
-        method.body().add(JExpr._this().ref("defaultMethods").invoke("put").arg("Offset").arg(jCodeModel.ref(String.class).dotclass()));
-        method.body().add(JExpr._this().ref("defaultMethods").invoke("put").arg("Visible").arg(jCodeModel.ref(Boolean.class).dotclass()));
-        defaultMethods.add("Offset");
-        defaultMethods.add("Visible");
-
-        constructor.body().invoke("addMaterialBaseWidgetMethods");
-    }
-
-    private void processMethods(ClassInfo materialWidget, Set<Method> methods) {
-        ClassUtils.getAllSuperclasses(materialWidget.load()).stream().forEach(s -> {
-            if (s.getSimpleName().equals(MaterialWidget.class.getSimpleName()))
-                ClassUtils.getAllInterfaces(s).stream().forEach(ifaces -> {
-                    if (ifaces.getName().startsWith("gwt.material.design.client.base") ||
-                            ifaces.getName().startsWith("com.google.gwt.user.client.ui.HasVisibility") ||
-                            ifaces.getName().startsWith("com.google.gwt.user.client.ui.HasEnabled") ||
-                            ifaces.getName().startsWith("com.google.gwt.user.client.ui.Focusable")
-                            ) {
-                        Arrays.stream(ifaces.getMethods()).forEach(method -> {
-                            if (method.getName().startsWith("set")) {
-                                maybeAddProperty(methods, method);
-                            }
-                        });
+    private void processMethods(Class materialWidget, Set<Method> methods) {
+        ClassUtils.getAllInterfaces(materialWidget).stream().forEach(ifaces -> {
+            if (ifaces.getName().startsWith("gwt.material.design.client.base.") ||
+                    ifaces.getName().startsWith("com.google.gwt.user.client.ui.")
+                    ) {
+                Arrays.stream(ifaces.getMethods()).forEach(m -> {
+                    if (m.getName().startsWith("set")) {
+                        maybeAddProperty(methods, m, materialWidget);
                     }
                 });
-        });
-        Arrays.stream(materialWidget.load().getDeclaredMethods()).forEach(method -> {
-            if (method.getName().startsWith("set")) {
-                maybeAddProperty(methods, method);
             }
         });
 
+        Arrays.stream(materialWidget.getMethods()).forEach(m -> {
+            if (m.getName().startsWith("set")) {
+                Optional<Method> check = methods.stream().filter(mm -> mm.getName().equals(m.getName())).findFirst();
+                if (!check.isPresent()) {
+                    maybeAddProperty(methods, m, materialWidget);
+                }
+            }
+
+        });
     }
 
     private Boolean isExtendsMaterialWidget(Class<?> widget) {
         for (Class<?> clazz : ClassUtils.getAllSuperclasses(widget)) {
-            if (clazz.getSimpleName().equals(MaterialWidget.class.getSimpleName())) {
+            if (clazz.equals(MaterialWidget.class)) {
                 return true;
             }
         }
@@ -330,48 +360,121 @@ public class MaterialWidgetFactoryGenerator {
         for (Method s : properties) {
             Class<?>[] pType = s.getParameterTypes();
             Class param = pType[0];
-            if (!defaultMethods.contains(s.getName().replace("set", "")) && !param.getCanonicalName().equals(Type.class.getCanonicalName())) {
+            String name = s.getName().replaceFirst("set", "").toLowerCase();
+            if (!param.getCanonicalName().equals(Type.class.getCanonicalName()) &&
+                    !param.getCanonicalName().equals(Object.class.getCanonicalName())) {
+                String methodName = generateNativeMethodName(s);
 
 
-                param = processMethodSignature(param);
+                if (clazz.equals(MaterialWidget.class)) {
+                    methodName = generateNativeMethodName(s);
 
-                method.body().add(var.invoke("getMethods").invoke("put").arg(s.getName().replace("set", "")).arg(jCodeModel.ref(param).dotclass()));
+                    MethodHolder holder = allMethods.get(methodName);
+                    if (Modifier.isAbstract(holder.iface.getModifiers()) && !holder.iface.isInterface()) {
+                        Class methodParam = holder.param;
+                        if(methodParam.isPrimitive()){
+                            methodParam = GwtMaterialUtil.primitiveToBoxed(methodParam);
+                        }
+                        methodName +=""+holder.widget.getSimpleName();
+
+                        JVar func = method.body().decl(jCodeModel.ref(BiConsumer.class).narrow(jCodeModel.ref(MaterialWidget.class)).narrow(jCodeModel.ref(methodParam)), methodName);
+                        func.init(JExpr.direct("this::" + methodName));
+                        method.body().add(var.invoke("getMethods").invoke("put").arg(name).arg(JExpr._new(jCodeModel.ref(MaterialMethodDefinition.class)).arg(doJExpressionMethodDefinition(jCodeModel, param)).arg(func)));
+
+
+                    } else {
+                        method.body().add(var.invoke("getMethods").invoke("put").arg(name).arg(JExpr._new(jCodeModel.ref(MaterialMethodDefinition.class)).arg(doJExpressionMethodDefinition(jCodeModel, param)).arg(JExpr.direct("this::" + generateNativeMethodName(s)))));
+                    }
+
+                } else if (!defaultMethods.contains(methodName)) {
+                    MethodHolder holder = allMethods.get(methodName);
+                    if (Modifier.isAbstract(holder.iface.getModifiers()) && !holder.iface.isInterface()) {
+                        Class methodParam = holder.param;
+                        if(methodParam.isPrimitive()){
+                            methodParam = GwtMaterialUtil.primitiveToBoxed(methodParam);
+                        }
+                        methodName +=""+holder.widget.getSimpleName();
+
+                        JVar func = method.body().decl(jCodeModel.ref(BiConsumer.class).narrow(jCodeModel.ref(MaterialWidget.class)).narrow(jCodeModel.ref(methodParam)), methodName);
+                        func.init(JExpr.direct("this::" + methodName));
+                        method.body().add(var.invoke("getMethods").invoke("put").arg(name).arg(JExpr._new(jCodeModel.ref(MaterialMethodDefinition.class)).arg(doJExpressionMethodDefinition(jCodeModel, param)).arg(func)));
+                    } else {
+                        method.body().add(var.invoke("getMethods").invoke("put").arg(name).arg(JExpr._new(jCodeModel.ref(MaterialMethodDefinition.class)).arg(doJExpressionMethodDefinition(jCodeModel, param)).arg(JExpr.direct("this::" + methodName))));
+                    }
+                }
             }
         }
+        if (clazz.equals(MaterialWidget.class)) {
+            method.body().add(JExpr._this().ref("defaultMethods").invoke("putAll").arg(var.invoke("getMethods")));
+        }
+
         method.body().add(JExpr._this().ref("widgets").invoke("put").arg(tag.toLowerCase()).arg(JExpr.ref("field")));
         constructor.body().invoke("add" + tag);
     }
 
-    private Class processMethodSignature(Class param) {
-        if (param.isPrimitive()) {
-            if (param.equals(boolean.class)) {
-                param = Boolean.class;
-            } else if (param.equals(int.class)) {
-                param = Integer.class;
-            } else if (param.equals(long.class)) {
-                param = Long.class;
-            } else if (param.equals(double.class)) {
-                param = Double.class;
-            } else if (param.equals(float.class)) {
-                param = Float.class;
-            }
-        }
-        return param;
-    }
-
     private void generateWidgetInvoke(JCodeModel jCodeModel, Class clazz) {
-        invoke.body()._if(JExpr.ref("tag").invoke("equals").arg(clazz.getSimpleName().toLowerCase()))._then()
-                .assign(JExpr.ref("result"), JExpr._new(jCodeModel.ref(clazz)));
+        JBlock ifBlock = invoke.body()._if(JExpr.ref("tag").invoke("equals").arg(clazz.getSimpleName().toLowerCase()))._then();
+        JDefinedClass definedClass = jCodeModel.anonymousClass(clazz);
+        JBlock methodBody = definedClass.method(JMod.PUBLIC, jCodeModel.ref(clazz) , "doAttach").body();
+        methodBody._if(JExpr._this().invoke("isAttached").eq(JExpr.lit(false)))._then().add(JExpr._super().invoke("onAttach"));
+        methodBody._return(JExpr._this());
+        ifBlock.assign(JExpr.ref("result"), JExpr._new(definedClass).invoke("doAttach"));
+
     }
 
 
-    private void maybeAddProperty(Set<Method> properties, Method property) {
-        if (property.getName().startsWith("set")) {
-            String candidate = property.getName().replaceFirst("set", "");
-            if (!Arrays.asList(BLACKLISTED_PROPERTIES).contains(candidate)) {
-                properties.add(property);
+    private void maybeAddProperty(Set<Method> properties, Method property, Class materialWidget) {
+        if (property.getParameters().length == 1 && Modifier.isPublic(property.getModifiers())) {
+            if (!Arrays.asList(BLACKLISTED_PROPERTIES).contains(property.getName().replaceFirst("set", ""))
+                    && isMethodParamSupported(property.getParameters()[0].getType())) {
+                Class type = property.getParameters()[0].getType();
+                String methodName = generateNativeMethodName(property);
+                if (materialWidget.equals(MaterialWidget.class)) {
+                    properties.add(property);
+                    defaultMethods.add(generateNativeMethodName(property));
+                } else if (isExtendsMaterialWidget(materialWidget)) {
+                    properties.add(property);
+
+                } else {
+                    //        properties.add(property);
+                }
+
+                if (!allMethods.containsKey(methodName)) {
+                    allMethods.put(methodName, new MethodHolder(materialWidget, property.getDeclaringClass(), type, property, property.getName()));
+                }
             }
         }
+    }
+
+    private Boolean isMethodParamSupported(Class clazz) {
+        if (clazz.equals(Boolean.class) || clazz.equals(boolean.class)
+                || clazz.equals(String.class) || clazz.equals(Double.class)
+                || clazz.equals(double.class) || clazz.equals(Integer.class)
+                || clazz.equals(int.class) || clazz.isEnum()) {
+            return true;
+        }
+        return false;
+    }
+
+    private String generateNativeMethodName(Method method) {
+        return (method.getName() + "_" + method.getDeclaringClass().getCanonicalName().replaceAll("\\.", "_")).toLowerCase();
+    }
+
+    private class MethodHolder {
+        Class widget;
+        Class iface;
+        Class param;
+        Method method;
+        String name;
+
+        MethodHolder(Class widget, Class iface, Class param, Method method, String name) {
+            this.widget = widget;
+            this.iface = iface;
+            this.param = param;
+            this.method = method;
+            this.name = name;
+        }
+
     }
 
 }

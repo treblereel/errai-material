@@ -14,39 +14,31 @@
  *
  */
 
-package org.jboss.errai.polymer.shared;
+package org.jboss.errai.polymer.client.local;
 
-import java.util.Map;
+import java.util.function.BiConsumer;
 
 /**
  * @author Dmitrii Tikhomirov <chani@me.com>
- *
- * Created by treblereel on 3/10/17.
+ *         Created by treblereel on 3/22/17.
  */
-public class Tuple<K, V> implements Map.Entry<K, V> {
-    private K key;
+public class MaterialMethodDefinition {
 
-    private V value;
+    private Class parameter;
 
-    public Tuple(K key, V value){
-        this.key = key;
-        this.value = value;
+    private BiConsumer function;
+
+    public MaterialMethodDefinition(Class parameter, BiConsumer function){
+        this.parameter = parameter;
+        this.function = function;
+
     }
 
-    @Override
-    public K getKey() {
-        return key;
+    public BiConsumer getFunction() {
+        return function;
     }
 
-    @Override
-    public V getValue() {
-        return value;
+    public Class getParameter() {
+        return parameter;
     }
-
-    @Override
-    public V setValue(V value) {
-        this.value = value;
-        return value;
-    }
-
 }

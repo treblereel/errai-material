@@ -24,7 +24,7 @@ import org.jboss.errai.ioc.client.api.CodeDecorator;
 import org.jboss.errai.ioc.rebind.ioc.extension.IOCDecoratorExtension;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.Decorable;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.FactoryController;
-import org.jboss.errai.polymer.shared.GwtMaterialBootstrap;
+import org.jboss.errai.polymer.client.local.GwtMaterialBootstrap;
 import org.jboss.errai.ui.rebind.DataFieldCodeDecorator;
 import org.jboss.errai.ui.rebind.TemplatedCodeDecorator;
 import org.jboss.errai.ui.shared.api.annotations.Templated;
@@ -100,7 +100,7 @@ public class MaterialCodeDecorator extends IOCDecoratorExtension<Templated> {
         /**
          *  Rework this after !!! TODO
          */
-        controller.getFactoryInitializaionStatements().add(Stmt.loadVariable("context").invoke("getInstance", "Type_factory__o_j_e_p_s_Initializer__quals__j_e_i_Any_j_e_i_Default"));
+        controller.getFactoryInitializaionStatements().add(Stmt.loadVariable("context").invoke("getInstance", "Type_factory__o_j_e_p_c_l_Initializer__quals__j_e_i_Any_j_e_i_Default"));
 
 
         controller.addInitializationStatementsToEnd(stmts);
