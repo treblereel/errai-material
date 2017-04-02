@@ -32,10 +32,7 @@
 
 package org.jboss.errai.polymer.client.local;
 
-import com.google.gwt.user.client.ui.Widget;
 import gwt.material.design.client.base.MaterialWidget;
-
-import java.util.function.BiConsumer;
 
 /**
  * @author Dmitrii Tikhomirov <chani@me.com>

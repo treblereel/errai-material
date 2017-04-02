@@ -6,6 +6,8 @@
     <inherits name="org.jboss.errai.common.ErraiCommon" />
     <inherits name="org.jboss.errai.enterprise.CDI" />
 
+    <inherits name="org.jboss.errai.ui.UI"/>
+
     <inherits name="gwt.material.design.GwtMaterialWithJQuery"/>
     <inherits name="gwt.material.design.GwtMaterialDesignBasic" />
     <inherits name="gwt.material.design.addins.GwtMaterialAddins" />

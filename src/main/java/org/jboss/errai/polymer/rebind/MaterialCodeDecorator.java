@@ -16,6 +16,7 @@ package org.jboss.errai.polymer.rebind;
 
 import gwt.material.design.client.base.MaterialWidget;
 import org.jboss.errai.codegen.Statement;
+import org.jboss.errai.codegen.Variable;
 import org.jboss.errai.codegen.exception.GenerationException;
 import org.jboss.errai.codegen.meta.MetaClass;
 import org.jboss.errai.codegen.meta.MetaMethod;
@@ -95,12 +96,19 @@ public class MaterialCodeDecorator extends IOCDecoratorExtension<Templated> {
                 processMaterialTag(field.getKey());
         }
 
-        stmts.add(invokeStatic(GwtMaterialBootstrap.class, "processTemplate", loadVariable("parentElementForTemplateOfApp"), loadVariable("dataFieldElements"), loadVariable("gwtMaterialElementInnerHTMLContentMap")));
+        final String templateVarName = "templateFor" + decorable.getDecorableDeclaringType().getName();
+
+        stmts.add(invokeStatic(GwtMaterialBootstrap.class, "processTemplate", loadVariable("parentElementForTemplateOfApp"),
+                Stmt.loadVariable(templateVarName).invoke("getContents").invoke("getText"),
+                TemplatedCodeDecorator.getTemplateFileName(declaringClass),
+                TemplatedCodeDecorator.getTemplateFragmentName(declaringClass),
+                loadVariable("dataFieldElements"),
+                loadVariable("gwtMaterialElementInnerHTMLContentMap")));
 
         /**
          *  Rework this after !!! TODO
          */
-        controller.getFactoryInitializaionStatements().add(Stmt.loadVariable("context").invoke("getInstance", "Type_factory__o_j_e_p_c_l_Initializer__quals__j_e_i_Any_j_e_i_Default"));
+        controller.getFactoryInitializaionStatements().add(Stmt.loadVariable("context").invoke("getInstance", "Type_factory__o_j_e_p_c_l_GwtMaterialInitializer__quals__j_e_i_Any_j_e_i_Default"));
 
 
         controller.addInitializationStatementsToEnd(stmts);

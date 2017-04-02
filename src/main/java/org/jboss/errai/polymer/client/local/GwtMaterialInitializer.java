@@ -33,6 +33,7 @@
 package org.jboss.errai.polymer.client.local;
 
 import gwt.material.design.client.MaterialDesignBase;
+import gwt.material.design.client.resources.MaterialDebugResources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,8 +46,8 @@ import javax.ejb.Singleton;
  * Created by treblereel on 3/7/17.
  */
 @Singleton
-public class Initializer extends MaterialDesignBase {
-    private final Logger logger = LoggerFactory.getLogger(Initializer.class);
+public class GwtMaterialInitializer extends MaterialDesignBase {
+    private final Logger logger = LoggerFactory.getLogger(GwtMaterialInitializer.class);
     private boolean loaded = false;
 
     @PostConstruct
@@ -55,7 +56,8 @@ public class Initializer extends MaterialDesignBase {
     }
 
     private void loadJs() {
-        logger.warn(" load material javascripts ");
+        logger.warn(" load gwtmaterial javascripts ...");
+
         if (!loaded) {
             load();
             loaded = true;

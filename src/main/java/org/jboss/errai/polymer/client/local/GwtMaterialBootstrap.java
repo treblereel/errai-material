@@ -35,15 +35,18 @@ package org.jboss.errai.polymer.client.local;
 import com.google.gwt.core.client.JsArray;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Node;
+import com.google.gwt.user.client.DOM;
 import gwt.material.design.client.base.MaterialWidget;
+import gwt.material.design.client.ui.html.Div;
 import org.jboss.errai.ioc.client.container.IOC;
+import org.jboss.errai.ui.shared.Visit;
+import org.jboss.errai.ui.shared.VisitContext;
+import org.jboss.errai.ui.shared.VisitContextMutable;
+import org.jboss.errai.ui.shared.Visitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * @author Dmitrii Tikhomirov <chani@me.com>
@@ -53,65 +56,246 @@ import java.util.Optional;
 public class GwtMaterialBootstrap {
 
     private Element composite;
+    private Element originalComposite;
     private Map<String, Element> dataFieldElements;
     private Map<String, String> datafieldsInnerHtml;
+    private String originalTemplate;
+    private String templateFileName;
+    private String rootField;
 
     private final MaterialWidgetFactory widgetFactory = IOC.getBeanManager().lookupBean(MaterialWidgetFactory.class).getInstance();
     private static final Logger logger = LoggerFactory.getLogger(GwtMaterialBootstrap.class);
 
-    private GwtMaterialBootstrap(Element composite, Map<String, Element> dataFieldElements, Map<String, String> datafieldsInnerHtml) {
+    private GwtMaterialBootstrap(Element composite, String templateContents, String templateFileName, String rootField, Map<String, Element> dataFieldElements, Map<String, String> datafieldsInnerHtml) {
         this.composite = composite;
         this.datafieldsInnerHtml = datafieldsInnerHtml;
         this.dataFieldElements = dataFieldElements;
+        this.originalTemplate = templateContents;
+        this.templateFileName = templateFileName;
+        this.rootField = rootField;
     }
 
     private void processTemplate() {
-        process(composite);
+        processTemplateMaterialSelfClosedTags();
+        processTemplateMaterialTags();
     }
 
-    private Element process(Element element) {
-        if (element.getChildCount() != 0) {
-            for (int i = 0; i < element.getChildNodes().getLength(); i++) {
-                Element child = (Element) element.getChildNodes().getItem(i);
-                if (child.getChildNodes().getLength() > 0) {
-                    process(child);
-                    if (child.getTagName() != null) {
+    private void processTemplateMaterialSelfClosedTags() {
 
-                        if (child.getTagName().toLowerCase().contains("material")) {
-                            if (child.getAttribute("data-field").equals("")) {
-                                replace(child);
-                            } else {
-                                Element datafielded = dataFieldElements.get(child.getAttribute("data-field"));
-                                replace(child, datafielded);
-                            }
+        Element parserDiv = DOM.createDiv();
+        String parsed = GwtMaterialUtil.closeVoidTags(originalTemplate);
+        parserDiv.setInnerHTML(parsed);
+
+        if (rootField != null && !rootField.trim().isEmpty()) {
+            final VisitContext<TaggedElement> context = Visit.depthFirst(parserDiv, new Visitor<TaggedElement>() {
+                @Override
+                public boolean visit(final VisitContextMutable<TaggedElement> context, final Element element) {
+                    for (final AttributeType attrType : AttributeType.values()) {
+                        final String attrName = attrType.getAttributeName();
+                        final TaggedElement existingCandidate = context.getResult();
+                        if (element.hasAttribute(attrName) && element.getAttribute(attrName).equals(rootField)
+                                && (existingCandidate == null || existingCandidate.getAttributeType().ordinal() < attrType.ordinal())) {
+                            context.setResult(new TaggedElement(attrType, element));
                         }
                     }
-                } else {
-                    if (child.getTagName() != null) {
-
-                        if (child.getTagName().toLowerCase().contains("material")) {
-                            if (child.getAttribute("data-field").equals("")) {
-                                replace(child);
-                            } else {
-                                Element datafielded = dataFieldElements.get(child.getAttribute("data-field"));
-                                replace(child, datafielded);
-                            }
-                        } else {
-                            if (!child.getAttribute("data-field").equals("") && child.getInnerHTML().trim().equals("")) {
-                                Optional<String> opt = checkDataFieldActivateWidget(child);
-                                if (opt.isPresent()) {
-                                    child.setInnerHTML(opt.get());
-                                    process(child);
-                                }
-                            }
-                        }
-                    }
+                    return true;
                 }
+            });
+
+
+            if (context.getResult().getElement() != null) {
+                originalComposite = context.getResult().getElement();
             }
         } else {
-            replace(element);
+            originalComposite = parserDiv;
         }
-        return element;
+
+        Element origin = DOM.createDiv();
+        origin.appendChild(originalComposite);
+
+        compareComposite(composite, origin);
+    }
+
+    /**
+     * Indicates the type of attribute a data field was discovered from.
+     */
+    private enum AttributeType {
+        CLASS("class"),
+        ID("id"),
+        DATA_FIELD("data-field");
+
+        private final String attributeName;
+
+        AttributeType(final String attributeName) {
+            this.attributeName = attributeName;
+        }
+
+        public String getAttributeName() {
+            return attributeName;
+        }
+    }
+
+    private static class TaggedElement {
+        private final AttributeType attributeType;
+        private final Element element;
+
+        public TaggedElement(final AttributeType attributeType, final Element element) {
+            this.attributeType = attributeType;
+            this.element = element;
+        }
+
+        public AttributeType getAttributeType() {
+            return attributeType;
+        }
+
+        public Element getElement() {
+            return element;
+        }
+    }
+
+    private void compareComposite(Element composite, Element original) {
+        List<Node> compChildren = getNodeChildren(composite);
+        List<Node> origChildren = getNodeChildren(original);
+        boolean rerun = false;
+
+        if (hasСhildren(composite)) {
+            for (int i = 0; i < compChildren.size(); i++) {
+                Element compChild = (Element) compChildren.get(i);
+
+                if (origChildren.size() > compChildren.size()) {
+                    Element origChild = (Element) origChildren.get(i);
+                    if (compChild.getNodeType() == Node.ELEMENT_NODE) {
+                        if (compChildren.size() == 1 && origChild.hasAttribute("self-closed")) {
+                            origChild.removeAttribute("self-closed");
+                            insertChildren(composite, compChild);
+                            rerun = true;
+
+                            break;
+                        } else if (compChildren.size() == 1 && origChild.getTagName() == null) {
+                            insertChildren(composite, compChild.getFirstChildElement());
+                            rerun = true;
+                            break;
+                        } else if (hasСhildren(compChild) && origChild.hasAttribute("self-closed")) {
+                            origChild.removeAttribute("self-closed");
+                            insertChildren(composite, compChild);
+                            rerun = true;
+                        } else if (!rerun) {
+                            if (hasСhildren(compChild)) {
+                                compareComposite(compChild, origChild);
+                            }
+                        }
+                    } else {
+                        insertChildren(composite.getParentElement(), compChild.getFirstChildElement());
+                        rerun = true;
+                    }
+                } else if (origChildren.size() == compChildren.size()) {
+                    Element originChild = (Element) origChildren.get(i);
+                    compareComposite(compChild, originChild);
+                }
+            }
+            if (rerun) {
+                compareComposite(composite, original);
+            }
+        }
+    }
+
+    private void insertChildren(Element parent, Element child) {
+        List<Node> children = getNodeChildren(child);
+        child.removeAllChildren();
+        Node after = child;
+        for (Node elm : children) {
+            parent.insertAfter(elm, after);
+            after = elm;
+        }
+    }
+
+    private int getNodeChildrenSize(Node node) {
+        return getNodeChildren(node).size();
+    }
+
+    private List<Node> getNodeChildren(Node node) {
+        List<Node> result = new LinkedList<>();
+        for (int i = 0; i < node.getChildNodes().getLength(); i++) {
+            Node child = node.getChildNodes().getItem(i);
+            if (child.getNodeType() == Node.ELEMENT_NODE) {
+                result.add(child);
+            }
+        }
+        return result;
+    }
+
+    private void processTemplateMaterialTags() {
+        if (composite.getChildCount() != 0) {
+            for (int i = 0; i < composite.getChildNodes().getLength(); i++) {
+                process(composite, (Element) composite.getChild(i));
+            }
+        }
+    }
+
+    private MaterialWidget processMaterialWidget(Element element) {
+        List<MaterialWidget> children = new ArrayList<>();
+        if (hasСhildren(element)) {
+            for (int i = 0; i < element.getChildNodes().getLength(); i++) {
+                Node node = element.getChildNodes().getItem(i);
+                if (node != null && node.getNodeType() == 1) {
+                    Element elm = (Element) element.getChildNodes().getItem(i);
+                    children.add(processMaterialWidget(elm));
+                }
+            }
+        }
+        MaterialWidget widget = replace(element);
+        for (MaterialWidget w : children) {
+            widget.add(w);
+        }
+        return widget;
+    }
+
+
+    private void process(Element parent, Element element) {
+        if (isMaterial(element)) {
+            MaterialWidget materialWidget = processMaterialWidget(element);
+            Div wrapper = new Div() {
+                public Div attach(MaterialWidget widget) {
+                    if (!widget.isAttached()) {
+                        this.setDataAttribute("material-wrapper", materialWidget.getClass().getSimpleName());
+                        try {
+                            super.doAttachChildren();
+                        } catch (java.lang.IllegalStateException e) {
+                            // do nothing
+                        }
+                    }
+                    return this;
+                }
+
+                public Div addWidget(MaterialWidget widget) {
+                    this.add(widget);
+                    attach(widget);
+                    return this;
+                }
+            }.addWidget(materialWidget);
+            parent.replaceChild(wrapper.getElement(), element);
+        } else {
+            if (hasСhildren(element)) {
+                for (int i = 0; i < element.getChildNodes().getLength(); i++) {
+                    Element child = (Element) element.getChildNodes().getItem(i);
+                    process(element, child);
+                }
+            }
+        }
+    }
+
+    private boolean isMaterial(Element elm) {
+        if (elm.getTagName() != null && elm.getTagName().toLowerCase().contains("material")) {
+            return true;
+        }
+        return false;
+    }
+
+    private boolean hasСhildren(Element elm) {
+        if (elm.getChildCount() != 0) {
+            return true;
+        }
+        return false;
     }
 
     private Optional<String> checkDataFieldActivateWidget(Element elm) {
@@ -122,62 +306,29 @@ public class GwtMaterialBootstrap {
         }
     }
 
-    private Element replace(Element oldElm, Element newElm) {
-        final Element parentElement = oldElm.getParentElement();
-        Node firstNode = oldElm.getFirstChild();
-        while (firstNode != null) {
-            if (firstNode != oldElm.getFirstChildElement())
-                newElm.appendChild(oldElm.getFirstChild());
-            else {
-                newElm.appendChild(oldElm.getFirstChildElement());
-            }
-            firstNode = oldElm.getFirstChild();
-        }
-
-        parentElement.replaceChild(newElm, oldElm);
-        return newElm;
-    }
-
-    private Element replace(Element element) {
+    private MaterialWidget replace(Element element) {
         MaterialWidget candidate = widgetFactory.invoke(element.getTagName());
         copyAttrs(element, candidate);
-        return replace(element, candidate.getElement());
+        return candidate;
     }
 
     private void copyAttrs(Element e, MaterialWidget obj) {
         if (widgetFactory.getWidgetDefIfExist(e.getTagName()).isPresent()) {
 
-
-            if (obj.getInitialClasses() != null) {
-                StringBuffer sb = new StringBuffer();
-                Arrays.stream(obj.getInitialClasses()).forEach(s -> sb.append(s + " "));
-                logger.warn("OBJ " + obj.getClass().getSimpleName() + " " + sb.toString());
-
-            }
-
-
             JsArray<Node> nodes = getAttributes(e);
             for (int t = 0; t < nodes.length(); t++) {
                 Node n = nodes.get(t);
-                logger.warn("Node " + obj.getClass() + " " + n.getNodeName() + " " + n.getNodeValue() + " " + widgetFactory.getMethodDefIfExist(e.getTagName(), n.getNodeName()).isPresent());
                 if (widgetFactory.getMethodDefIfExist(e.getTagName(), n.getNodeName()).isPresent()) {
                     MaterialMethodDefinition definition = widgetFactory.getMethodDefIfExist(e.getTagName(), n.getNodeName()).get();
-
-                    logger.warn(parseAttrValue(definition.getParameter(), n.getNodeValue()).getClass().getName());
                     definition.getFunction().accept(obj, parseAttrValue(definition.getParameter(), n.getNodeValue()));
                 } else {
                     obj.getElement().setAttribute(n.getNodeName(), n.getNodeValue());
                 }
-              //  obj.getElement().setAttribute(n.getNodeName(), n.getNodeValue()); //? TODO REMOVE
-
             }
         }
     }
 
     private Object parseAttrValue(Class clazz, String value) {
-        logger.warn(" parse " + clazz + " " + clazz.isEnum() + " " + value);
-
-
         if (clazz.equals(Boolean.class) || clazz.equals(boolean.class)) {
             return new Boolean(value);
         } else if (clazz.equals(String.class)) {
@@ -200,8 +351,27 @@ public class GwtMaterialBootstrap {
         throw new IllegalArgumentException("there is no such element with data-field=" + lookup.getAttribute("data-field"));
     }
 
-    public static void processTemplate(Element composite, Map<String, Element> dataFieldElements, Map<String, String> datafieldsInnerHtml) {
-        new GwtMaterialBootstrap(composite, dataFieldElements, datafieldsInnerHtml).processTemplate();
+    public static void processTemplate(Element composite, String templateContents, String templateFileName, String rootField, Map<String, Element> dataFieldElements, Map<String, String> datafieldsInnerHtml) {
+        new GwtMaterialBootstrap(composite, templateContents, templateFileName, rootField, dataFieldElements, datafieldsInnerHtml).processTemplate();
+    }
+
+
+    public static String getAttributesByName(Element elem, String name) {
+        JsArray<Node> attributes = getAttributes(elem);
+
+        for (int i = 0; i < attributes.length(); i++) {
+            final Node node = attributes.get(i);
+            String attributeName = node.getNodeName();
+            String attributeValue = node.getNodeValue();
+            logger.warn("getAttributesByName" + attributeName + " " + attributeValue);
+
+            if (attributeName.equals(name)) {
+                return attributeValue;
+            }
+        }
+
+
+        return "";
     }
 
 
@@ -210,3 +380,5 @@ public class GwtMaterialBootstrap {
     }-*/;
 
 }
+
+

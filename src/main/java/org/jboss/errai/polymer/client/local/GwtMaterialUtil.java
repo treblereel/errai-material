@@ -16,7 +16,8 @@
 
 package org.jboss.errai.polymer.client.local;
 
-import java.util.EnumSet;
+import com.google.gwt.regexp.shared.MatchResult;
+import com.google.gwt.regexp.shared.RegExp;
 
 /**
  * @author Dmitrii Tikhomirov <chani@me.com>
@@ -24,19 +25,31 @@ import java.util.EnumSet;
  */
 public class GwtMaterialUtil {
 
-    public static void processWidgetProperties(){
+    private static final String HTML_VOID_TAG_PATTERN = "<([m,M]aterial-\\w*)(\"[^\"]*\"|[^'\">])*/>";
 
+
+    public static Class primitiveToBoxed(Class clazz) {
+        if (clazz.equals(boolean.class)) {
+            return Boolean.class;
+        } else if (clazz.equals(double.class)) {
+            return Double.class;
+        } else if (clazz.equals(int.class)) {
+            return Integer.class;
+        }
+        return clazz;
     }
 
-
-    public static Class primitiveToBoxed(Class clazz){
-            if (clazz.equals(boolean.class)) {
-                return Boolean.class;
-            } else if (clazz.equals(double.class)) {
-                return Double.class;
-            } else if (clazz.equals(int.class)) {
-                return Integer.class;
-            }
-            return clazz;
+    public static String closeVoidTags(String html){
+        RegExp regExp = RegExp.compile(HTML_VOID_TAG_PATTERN, "g");
+        for (MatchResult matcher = regExp.exec(html); matcher != null; matcher = regExp.exec(html)) {
+            String tag = matcher.getGroup(0);
+            int index  = tag.lastIndexOf("/");
+            String mark = " self-closed=\"true\">";
+            String tagFixed = tag.substring(0, index).trim() + mark;
+            String tagName = matcher.getGroup(1);
+            html = html.replace(tag, tagFixed+"</"+tagName+">");
+        }
+        return html;
     }
+
 }

@@ -19,7 +19,6 @@ package org.jboss.errai.polymer.rebind;
 import com.google.gwt.thirdparty.guava.common.collect.ImmutableSet;
 import com.google.gwt.thirdparty.guava.common.reflect.ClassPath;
 import com.google.gwt.thirdparty.guava.common.reflect.ClassPath.ClassInfo;
-import com.google.gwt.user.client.ui.Widget;
 import com.sun.codemodel.*;
 import com.sun.codemodel.writer.SingleStreamCodeWriter;
 import gwt.material.design.client.base.MaterialWidget;
@@ -49,6 +48,7 @@ import java.util.function.BiConsumer;
  *         <p>
  *         Created by treblereel on 3/9/17.
  */
+
 public class MaterialWidgetFactoryGenerator {
 
     private static final Logger logger = LoggerFactory.getLogger(MaterialWidgetFactoryGenerator.class);
@@ -196,7 +196,7 @@ public class MaterialWidgetFactoryGenerator {
     }
 
     private void constractInvokeMethodBody(JCodeModel jCodeModel) {
-        invoke.body()._if(JExpr.ref("result").eq(JExpr._null()))._then()._throw(JExpr._new(jCodeModel.ref(RuntimeException.class)).arg("No such MaterialWidget found  "));
+        invoke.body()._if(JExpr.ref("result").eq(JExpr._null()))._then()._throw(JExpr._new(jCodeModel.ref(RuntimeException.class)).arg(JExpr.lit("No such MaterialWidget found  ").plus(JExpr.ref("tag"))));
 
         invoke.body().decl(jCodeModel.ref(Optional.class).narrow(jCodeModel.ref(MaterialWidgetDefinition.class)), "def").init(JExpr._this().invoke("getWidgetDefIfExist").arg(JExpr.ref("tag")));
         JBlock jInvokeBlock = invoke.body()._if(JExpr.ref("def").invoke("isPresent").eq(JExpr.lit(true)).cand(JExpr.ref("def").invoke("get").invoke("getExtendsMaterialWidget").eq(JExpr.lit(true))))
@@ -413,12 +413,8 @@ public class MaterialWidgetFactoryGenerator {
     }
 
     private void generateWidgetInvoke(JCodeModel jCodeModel, Class clazz) {
-        JBlock ifBlock = invoke.body()._if(JExpr.ref("tag").invoke("equals").arg(clazz.getSimpleName().toLowerCase()))._then();
-        JDefinedClass definedClass = jCodeModel.anonymousClass(clazz);
-        JBlock methodBody = definedClass.method(JMod.PUBLIC, jCodeModel.ref(clazz) , "doAttach").body();
-        methodBody._if(JExpr._this().invoke("isAttached").eq(JExpr.lit(false)))._then().add(JExpr._super().invoke("onAttach"));
-        methodBody._return(JExpr._this());
-        ifBlock.assign(JExpr.ref("result"), JExpr._new(definedClass).invoke("doAttach"));
+        invoke.body()._if(JExpr.ref("tag").invoke("equals").arg(clazz.getSimpleName().toLowerCase()))._then()
+                .assign(JExpr.ref("result"), JExpr._new(jCodeModel.ref(clazz)));
 
     }
 

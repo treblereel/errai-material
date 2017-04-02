@@ -19,8 +19,6 @@ package org.jboss.errai.polymer;
 
 import com.google.common.reflect.TypeToken;
 import com.google.gwt.dom.client.Style;
-import com.google.gwt.thirdparty.guava.common.collect.ImmutableSet;
-import com.google.gwt.thirdparty.guava.common.reflect.ClassPath;
 import com.google.gwt.user.client.ui.HasText;
 import gwt.material.design.client.base.AbstractButton;
 import gwt.material.design.client.base.MaterialWidget;
@@ -28,7 +26,6 @@ import gwt.material.design.client.constants.TextAlign;
 import gwt.material.design.client.constants.WavesType;
 import gwt.material.design.client.ui.*;
 import org.apache.commons.lang3.ClassUtils;
-import org.jboss.errai.polymer.rebind.MaterialWidgetFactoryGenerator;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -39,6 +36,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.jboss.errai.polymer.client.local.GwtMaterialUtil.closeVoidTags;
 
 /**
  * @author Dmitrii Tikhomirov <chani@me.com>
@@ -58,20 +57,20 @@ public class MaterialWidgetsClassDescriptionTest {
     @Test
     public void materialLinkTest() throws IOException {
         Set<Method> methods = parseMethods(MaterialLink.class);
-   //     Assert.assertEquals(65, methods.size());
+        //     Assert.assertEquals(65, methods.size());
     }
 
     @Test
     public void materialDatePickerTest() throws IOException {
         Set<Method> methods = parseMethods(MaterialDatePicker.class);
-   //     Assert.assertEquals(82, methods.size());
+        //     Assert.assertEquals(82, methods.size());
     }
 
     @Test
     public void materialMaterialListValueBoxTest() throws IOException {
         Set<Method> methods = parseMethods(MaterialListValueBox.class);
 
-     //   Assert.assertEquals(78, methods.size());
+        //   Assert.assertEquals(78, methods.size());
     }
 
     private Set<Method> parseMethods(Class c) throws IOException {
@@ -91,15 +90,15 @@ public class MaterialWidgetsClassDescriptionTest {
         Arrays.stream(c.getMethods()).forEach(m -> {
             if (m.getName().startsWith("set")) {
                 Optional<Method> check = methods.stream().filter(mm -> mm.getName().equals(m.getName())).findFirst();
-                if(!check.isPresent()){
+                if (!check.isPresent()) {
                     methods.add(m);
                 }
             }
 
         });
 
-        methods.stream().forEach( m ->{
-        //    logger.warn(m.getName() + m.getParameters().length + m.getModifiers() + " " + Modifier.isPublic(m.getModifiers())+ " " + m.getDeclaringClass().getCanonicalName());
+        methods.stream().forEach(m -> {
+            //    logger.warn(m.getName() + m.getParameters().length + m.getModifiers() + " " + Modifier.isPublic(m.getModifiers())+ " " + m.getDeclaringClass().getCanonicalName());
 
         });
 
@@ -110,15 +109,14 @@ public class MaterialWidgetsClassDescriptionTest {
     @Test
     public void materialMaterialWidgetTest() throws IOException {
         Set<Method> methods = parseMethods(MaterialWidget.class);
-      //  Assert.assertEquals(76, methods.size());
+        //  Assert.assertEquals(76, methods.size());
     }
 
     @Test
     public void materialMaterialButtonTest() throws IOException {
         Set<Method> methods = parseMethods(MaterialButton.class);
-  //      Assert.assertEquals(65, methods.size());
+        //      Assert.assertEquals(65, methods.size());
     }
-
 
 
     @Test
@@ -175,29 +173,58 @@ public class MaterialWidgetsClassDescriptionTest {
         Object wavesTypeObject = EnumSet.allOf(clazz).stream().filter(e -> e.toString().equals(value.toUpperCase())).findFirst().orElse(null);
 
         Assert.assertNotNull(wavesTypeObject);
-        Assert.assertEquals("waves-default",((WavesType) wavesTypeObject).getCssName());
-        Assert.assertEquals("DEFAULT",((WavesType) wavesTypeObject).name());
+        Assert.assertEquals("waves-default", ((WavesType) wavesTypeObject).getCssName());
+        Assert.assertEquals("DEFAULT", ((WavesType) wavesTypeObject).name());
     }
 
     @Test
     public void classToString() {
         //gwt.material.design.client.base.MaterialWidget
         Class param = boolean.class;
-        if(param.equals(boolean.class)){
-         //   logger.warn("yeap");
-        }else{
-         //   logger.warn("nope");
+        if (param.equals(boolean.class)) {
+            //   logger.warn("yeap");
+        } else {
+            //   logger.warn("nope");
         }
 
 
-     //   logger.warn("classToString " + param.getCanonicalName().replaceAll("\\.","/"));
-       // Assert.assertEquals(Style.Visibility.HIDDEN, com.google.gwt.dom.client.Style.Visibility.valueOf("HIDDEN"));
+        //   logger.warn("classToString " + param.getCanonicalName().replaceAll("\\.","/"));
+        // Assert.assertEquals(Style.Visibility.HIDDEN, com.google.gwt.dom.client.Style.Visibility.valueOf("HIDDEN"));
     }
 
     @Test
-    public void checkAbstractClass(){
+    public void checkAbstractClass() {
 
-        System.out.println(Modifier.isAbstract(AbstractButton.class.getModifiers()) + " " +AbstractButton.class.isInterface() + " " + Modifier.isAbstract(HasText.class.getModifiers()));
+        System.out.println(Modifier.isAbstract(AbstractButton.class.getModifiers()) + " " + AbstractButton.class.isInterface() + " " + Modifier.isAbstract(HasText.class.getModifiers()));
+
+    }
+
+    @Test
+    public void testSelfClosingTagReplacer() {
+        String input = "<!DOCTYPE html\n" +
+                "<div data-field=\"root\" id=\"root\"><material-button/>" +
+                "<material-button />" +
+                "<Material-button/>" +
+                "<Material-button />" +
+                "<Material-button text=\"Primary\" waves=\"LIGHT\" textColor=\"WHITE\" iconType=\"POLYMER\" iconPosition=\"LEFT\" />\n" +
+                "<material-button text=\"Primary\" waves=\"LIGHT\" textColor=\"WHITE\" iconType=\"POLYMER\" iconPosition=\"LEFT\" />\n" +
+                "<material-dropdown activator=\"dp-4\" belowOrigin=\"false\" constrainWidth=\"false\">" +
+                "<material-link text=\"First\"/>" +
+                "<material-link text=\" Second \">" +
+                "<material-badge text=\"1 new \" textColor=\"WHITE\"/>" +
+                "</material-link>" +
+                "<material-link text=\"Third\"/>" +
+                "</material-dropdown>" +
+                "\n" +
+                "</div>";
+
+        String result = "<!DOCTYPE html\n" +
+                "<div data-field=\"root\" id=\"root\"><material-button self-closed=\"true\"></material-button><material-button self-closed=\"true\"></material-button><Material-button self-closed=\"true\"></Material-button><Material-button self-closed=\"true\"></Material-button><Material-button text=\"Primary\" waves=\"LIGHT\" textColor=\"WHITE\" iconType=\"POLYMER\" iconPosition=\"LEFT\" self-closed=\"true\"></Material-button>\n" +
+                "<material-button text=\"Primary\" waves=\"LIGHT\" textColor=\"WHITE\" iconType=\"POLYMER\" iconPosition=\"LEFT\" self-closed=\"true\"></material-button>\n" +
+                "<material-dropdown activator=\"dp-4\" belowOrigin=\"false\" constrainWidth=\"false\"><material-link text=\"First\" self-closed=\"true\"></material-link><material-link text=\" Second \"><material-badge text=\"1 new \" textColor=\"WHITE\" self-closed=\"true\"></material-badge></material-link><material-link text=\"Third\" self-closed=\"true\"></material-link></material-dropdown>\n" +
+                "</div>";
+
+        Assert.assertEquals(result, closeVoidTags(input));
 
     }
 
