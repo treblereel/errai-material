@@ -58,7 +58,6 @@ public class GwtMaterialBootstrap {
     private Element composite;
     private Element originalComposite;
     private Map<String, Element> dataFieldElements;
-    private Map<String, String> datafieldsInnerHtml;
     private String originalTemplate;
     private String templateFileName;
     private String rootField;
@@ -66,10 +65,8 @@ public class GwtMaterialBootstrap {
     private final MaterialWidgetFactory widgetFactory = IOC.getBeanManager().lookupBean(MaterialWidgetFactory.class).getInstance();
     private static final Logger logger = LoggerFactory.getLogger(GwtMaterialBootstrap.class);
 
-    private GwtMaterialBootstrap(Element composite, String templateContents, String templateFileName, String rootField, Map<String, Element> dataFieldElements, Map<String, String> datafieldsInnerHtml) {
+    private GwtMaterialBootstrap(Element composite, String templateContents, String templateFileName, String rootField) {
         this.composite = composite;
-        this.datafieldsInnerHtml = datafieldsInnerHtml;
-        this.dataFieldElements = dataFieldElements;
         this.originalTemplate = templateContents;
         this.templateFileName = templateFileName;
         this.rootField = rootField;
@@ -344,15 +341,16 @@ public class GwtMaterialBootstrap {
     }
 
     private String getElementContentByDataField(Element lookup) {
-        String result = datafieldsInnerHtml.get(lookup.getAttribute("data-field"));
+/*        String result = datafieldsInnerHtml.get(lookup.getAttribute("data-field"));
         if (result != null) {
             return result;
         }
-        throw new IllegalArgumentException("there is no such element with data-field=" + lookup.getAttribute("data-field"));
+        throw new IllegalArgumentException("there is no such element with data-field=" + lookup.getAttribute("data-field"));*/
+        return "";
     }
 
-    public static void processTemplate(Element composite, String templateContents, String templateFileName, String rootField, Map<String, Element> dataFieldElements, Map<String, String> datafieldsInnerHtml) {
-        new GwtMaterialBootstrap(composite, templateContents, templateFileName, rootField, dataFieldElements, datafieldsInnerHtml).processTemplate();
+    public static void processTemplate(Element composite, String templateContents, String templateFileName, String rootField, Map<String, Element> dataFieldElements) {
+        new GwtMaterialBootstrap(composite, templateContents, templateFileName, rootField).processTemplate();
     }
 
 

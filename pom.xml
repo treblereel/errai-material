@@ -26,7 +26,7 @@
     </developers>
 
     <properties>
-        <errai.version>4.0.0.CR2</errai.version>
+        <errai.version>4.0.0-SNAPSHOT</errai.version>
         <gwt-material.version>2.0-rc4</gwt-material.version>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>

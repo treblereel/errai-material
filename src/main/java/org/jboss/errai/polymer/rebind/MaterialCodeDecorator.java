@@ -53,7 +53,6 @@ import static org.jboss.errai.codegen.util.Stmt.*;
 public class MaterialCodeDecorator extends IOCDecoratorExtension<Templated> {
     private Document html;
     private List<Statement> stmts;
-    private static final String gwtMaterialElementInnerHTMLContentMap = "gwtMaterialElementInnerHTMLContentMap";
     private static final String gwtMaterialElementMap = "gwtMaterialElementMap";
 
     private static final Logger logger = LoggerFactory.getLogger(MaterialCodeDecorator.class);
@@ -64,46 +63,30 @@ public class MaterialCodeDecorator extends IOCDecoratorExtension<Templated> {
 
     @Override
     public void generateDecorator(final Decorable decorable, final FactoryController controller) {
+
         final MetaClass declaringClass = decorable.getDecorableDeclaringType();
+        final String parentOfRootTemplateElementVarName = "parentElementForTemplateOf" + decorable.getDecorableDeclaringType().getName();
+        final String templateVarName = "templateFor" + decorable.getDecorableDeclaringType().getName();
 
         List<MetaMethod> currentPostConstructs = declaringClass.getDeclaredMethodsAnnotatedWith(PostConstruct.class);
         if (currentPostConstructs.size() > 1) {
             throw new RuntimeException(declaringClass.getFullyQualifiedName() + " has multiple @PostConstruct methods.");
         }
 
+
         initTemplateParser(declaringClass); // ?
 
         stmts = new ArrayList<>();
-
-        stmts.add(declareVariable(gwtMaterialElementInnerHTMLContentMap, new TypeLiteral<Map<String, String>>() {
-                },
-                newObject(new TypeLiteral<LinkedHashMap<String, String>>() {
-                }))
-        );
-
         stmts.add(declareVariable(gwtMaterialElementMap, new TypeLiteral<Map<String, MaterialWidget>>() {
                 },
                 newObject(new TypeLiteral<LinkedHashMap<String, MaterialWidget>>() {
                 }))
         );
 
-        Map<String, MetaClass> types = DataFieldCodeDecorator.aggregateDataFieldTypeMap(decorable, decorable.getEnclosingInjectable().getInjectedType());
-
-
-        // only datafielded !!!
-        for (final Map.Entry<String, MetaClass> field : types.entrySet()) {
-            if (checkIfWidgetSupported(field.getValue()))
-                processMaterialTag(field.getKey());
-        }
-
-        final String templateVarName = "templateFor" + decorable.getDecorableDeclaringType().getName();
-
-        stmts.add(invokeStatic(GwtMaterialBootstrap.class, "processTemplate", loadVariable("parentElementForTemplateOfApp"),
+        stmts.add(invokeStatic(GwtMaterialBootstrap.class, "processTemplate", loadVariable(parentOfRootTemplateElementVarName),
                 Stmt.loadVariable(templateVarName).invoke("getContents").invoke("getText"),
                 TemplatedCodeDecorator.getTemplateFileName(declaringClass),
-                TemplatedCodeDecorator.getTemplateFragmentName(declaringClass),
-                loadVariable("dataFieldElements"),
-                loadVariable("gwtMaterialElementInnerHTMLContentMap")));
+                TemplatedCodeDecorator.getTemplateFragmentName(declaringClass), loadVariable("dataFieldElements")));
 
         /**
          *  Rework this after !!! TODO
@@ -121,17 +104,6 @@ public class MaterialCodeDecorator extends IOCDecoratorExtension<Templated> {
      */
     private boolean checkIfWidgetSupported(MetaClass className) {
         return className.getFullyQualifiedName().startsWith("gwt.material.design.client.ui");
-    }
-
-    private void processMaterialTag(String name) {
-        Element elm = getElementFromTemplate(name);
-        StringBuilder sb = new StringBuilder();
-        assert elm != null;
-        for (int i = 0; i < elm.childNodes().size(); i++) {
-            String c2 = elm.childNode(i).outerHtml();
-            sb.append(c2);
-        }
-        stmts.add(Stmt.loadVariable(gwtMaterialElementInnerHTMLContentMap).invoke("put", name, sb.toString()));
     }
 
     private Element getElementFromTemplate(String name) {
