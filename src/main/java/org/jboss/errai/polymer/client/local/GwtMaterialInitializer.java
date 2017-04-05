@@ -39,30 +39,27 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.PostConstruct;
 import javax.ejb.Singleton;
+import javax.ejb.Startup;
 
 /**
  * @author Dmitrii Tikhomirov <chani@me.com>
  *
  * Created by treblereel on 3/7/17.
  */
-@Singleton
 public class GwtMaterialInitializer extends MaterialDesignBase {
+    private static GwtMaterialInitializer INSTANCE = new GwtMaterialInitializer();
     private final Logger logger = LoggerFactory.getLogger(GwtMaterialInitializer.class);
     private boolean loaded = false;
 
-    @PostConstruct
-    public void init() {
-        loadJs();
+    public static GwtMaterialInitializer get(){
+        return INSTANCE;
     }
 
-    private void loadJs() {
-        logger.warn(" load gwtmaterial javascripts ...");
-
+    public void check() {
         if (!loaded) {
             load();
             loaded = true;
         }
     }
-
 
 }

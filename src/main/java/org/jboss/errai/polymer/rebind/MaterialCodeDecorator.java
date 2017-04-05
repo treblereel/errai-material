@@ -20,15 +20,18 @@ import org.jboss.errai.codegen.Variable;
 import org.jboss.errai.codegen.exception.GenerationException;
 import org.jboss.errai.codegen.meta.MetaClass;
 import org.jboss.errai.codegen.meta.MetaMethod;
+import org.jboss.errai.codegen.util.Refs;
 import org.jboss.errai.codegen.util.Stmt;
 import org.jboss.errai.ioc.client.api.CodeDecorator;
 import org.jboss.errai.ioc.rebind.ioc.extension.IOCDecoratorExtension;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.Decorable;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.FactoryController;
 import org.jboss.errai.polymer.client.local.GwtMaterialBootstrap;
+import org.jboss.errai.polymer.client.local.GwtMaterialInitializer;
 import org.jboss.errai.ui.rebind.DataFieldCodeDecorator;
 import org.jboss.errai.ui.rebind.TemplatedCodeDecorator;
 import org.jboss.errai.ui.shared.api.annotations.Templated;
+import org.jboss.errai.ui.shared.api.style.StyleBindingsRegistry;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -88,12 +91,7 @@ public class MaterialCodeDecorator extends IOCDecoratorExtension<Templated> {
                 TemplatedCodeDecorator.getTemplateFileName(declaringClass),
                 TemplatedCodeDecorator.getTemplateFragmentName(declaringClass), loadVariable("dataFieldElements")));
 
-        /**
-         *  Rework this after !!! TODO
-         */
-        controller.getFactoryInitializaionStatements().add(Stmt.loadVariable("context").invoke("getInstance", "Type_factory__o_j_e_p_c_l_GwtMaterialInitializer__quals__j_e_i_Any_j_e_i_Default"));
-
-
+        controller.getFactoryInitializaionStatements().add(Stmt.invokeStatic(GwtMaterialInitializer.class, "get").invoke("check"));
         controller.addInitializationStatementsToEnd(stmts);
     }
 
