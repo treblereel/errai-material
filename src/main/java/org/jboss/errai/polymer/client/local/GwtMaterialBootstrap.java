@@ -78,11 +78,10 @@ public class GwtMaterialBootstrap {
     }
 
     private void processTemplateMaterialSelfClosedTags() {
-
+        Element origin;
         Element parserDiv = DOM.createDiv();
         String parsed = GwtMaterialUtil.closeVoidTags(originalTemplate);
         parserDiv.setInnerHTML(parsed);
-
         if (rootField != null && !rootField.trim().isEmpty()) {
             final VisitContext<TaggedElement> context = Visit.depthFirst(parserDiv, new Visitor<TaggedElement>() {
                 @Override
@@ -98,18 +97,14 @@ public class GwtMaterialBootstrap {
                     return true;
                 }
             });
-
-
             if (context.getResult().getElement() != null) {
                 originalComposite = context.getResult().getElement();
             }
+            origin = DOM.createDiv();
+            origin.appendChild(originalComposite);
         } else {
-            originalComposite = parserDiv;
+            origin = parserDiv;
         }
-
-        Element origin = DOM.createDiv();
-        origin.appendChild(originalComposite);
-
         compareComposite(composite, origin);
     }
 
