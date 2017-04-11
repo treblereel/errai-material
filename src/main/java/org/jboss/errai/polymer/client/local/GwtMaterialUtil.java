@@ -106,11 +106,18 @@ public class GwtMaterialUtil {
                 Node n = nodes.get(t);
                 if (materialWidgetFactory.getMethodDefIfExist(tag, n.getNodeName()).isPresent()) {
                     MaterialMethodDefinition definition = materialWidgetFactory.getMethodDefIfExist(tag, n.getNodeName()).get();
-                    Object value =  parseAttrValue(definition.getParameter(), n.getNodeValue());
-                    if(value != null){
+                    Object value = parseAttrValue(definition.getParameter(), n.getNodeValue());
+                    if (value != null) {
                         definition.getFunction().accept(obj, value);
                         attrToRemove.add(n);
                     }
+                }else if(n.getNodeName().toLowerCase().equals("addstylenames")) {
+                    if (!n.getNodeValue().trim().equals("")) {
+                        obj.addStyleName(n.getNodeValue());
+                    }
+                    attrToRemove.add(n);
+                }else if(n.getNodeName().toLowerCase().equals("self-closed")){
+                    attrToRemove.add(n);
                 } else {
                     obj.getElement().setAttribute(n.getNodeName(), n.getNodeValue());
                 }

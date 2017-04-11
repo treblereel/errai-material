@@ -229,8 +229,6 @@ public class GwtMaterialBootstrap {
     }
 
     private MaterialWidget processMaterialWidget(Element element) {
-        logger.warn("processMaterialWidget " + element.getTagName());
-
         List<MaterialWidget> children = new ArrayList<>();
         if (hasСhildren(element)) {
             for (int i = 0; i < element.getChildNodes().getLength(); i++) {
@@ -249,8 +247,6 @@ public class GwtMaterialBootstrap {
     }
 
     private void replaceMaterialWidget(MaterialWidget parent, Element element) {
-        logger.warn("pre replaceMaterialWidget " + element.getTagName());
-
         if (isUnbundedMaterialWidget(element)) {
             MaterialWidget materialWidget = processMaterialWidget(element);
             if (element.hasParentElement())
