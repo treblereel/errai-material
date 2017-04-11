@@ -14,12 +14,11 @@
  *
  */
 
-package org.jboss.errai.polymer;
+package org.jboss.errai.material;
 
 
 import com.google.common.reflect.TypeToken;
 import com.google.gwt.dom.client.Style;
-import com.google.gwt.junit.client.GWTTestCase;
 import com.google.gwt.user.client.ui.HasText;
 import gwt.material.design.client.base.AbstractButton;
 import gwt.material.design.client.base.MaterialWidget;
@@ -27,7 +26,6 @@ import gwt.material.design.client.constants.TextAlign;
 import gwt.material.design.client.constants.WavesType;
 import gwt.material.design.client.ui.*;
 import org.apache.commons.lang3.ClassUtils;
-import org.jboss.errai.polymer.client.local.GwtMaterialUtil;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;

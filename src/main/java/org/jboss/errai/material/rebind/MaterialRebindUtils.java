@@ -14,7 +14,7 @@
  *
  */
 
-package org.jboss.errai.polymer.rebind;
+package org.jboss.errai.material.rebind;
 
 import com.google.gwt.thirdparty.guava.common.reflect.ClassPath;
 import gwt.material.design.client.base.MaterialWidget;

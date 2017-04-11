@@ -30,16 +30,11 @@
  *
  */
 
-package org.jboss.errai.polymer.client.local;
+package org.jboss.errai.material.client.local;
 
 import gwt.material.design.client.MaterialDesignBase;
-import gwt.material.design.client.resources.MaterialDebugResources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.annotation.PostConstruct;
-import javax.ejb.Singleton;
-import javax.ejb.Startup;
 
 /**
  * @author Dmitrii Tikhomirov <chani@me.com>

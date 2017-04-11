@@ -14,7 +14,7 @@
  *
  */
 
-package org.jboss.errai.polymer.rebind;
+package org.jboss.errai.material.rebind;
 
 import com.google.gwt.thirdparty.guava.common.collect.ImmutableSet;
 import com.google.gwt.thirdparty.guava.common.reflect.ClassPath;
@@ -23,10 +23,9 @@ import com.sun.codemodel.writer.SingleStreamCodeWriter;
 import gwt.material.design.client.base.MaterialWidget;
 import gwt.material.design.client.constants.Type;
 import org.apache.commons.lang3.ClassUtils;
-import org.jboss.errai.polymer.client.local.GwtMaterialUtil;
-import org.jboss.errai.polymer.client.local.MaterialMethodDefinition;
-import org.jboss.errai.polymer.client.local.MaterialWidgetDefinition;
-import org.jboss.errai.polymer.client.local.MaterialWidgetFactory;
+import org.jboss.errai.material.client.local.MaterialMethodDefinition;
+import org.jboss.errai.material.client.local.MaterialWidgetDefinition;
+import org.jboss.errai.material.client.local.MaterialWidgetFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +49,7 @@ public class MaterialWidgetFactoryGenerator {
 
     private static final Logger logger = LoggerFactory.getLogger(MaterialWidgetFactoryGenerator.class);
     private static final String DEFAULT_BUILD_LOCATION = "target/classes";
-    private static final String GWT_MATERIAL_FACTORY_PACKAGE_NAME = "org.jboss.errai.polymer.client";
+    private static final String GWT_MATERIAL_FACTORY_PACKAGE_NAME = "org.jboss.errai.material.client";
     private static final String GWT_MATERIAL_FACTORY_CLASS_NAME = "MaterialWidgetFactoryImpl";
     private final Set<String> defaultMethods = new HashSet<>();
     private final Map<String, MethodHolder> allMethods = new HashMap<>();

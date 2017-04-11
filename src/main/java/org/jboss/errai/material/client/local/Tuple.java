@@ -30,7 +30,7 @@
  *
  */
 
-package org.jboss.errai.polymer.client.local;
+package org.jboss.errai.material.client.local;
 
 import java.util.Map;
 

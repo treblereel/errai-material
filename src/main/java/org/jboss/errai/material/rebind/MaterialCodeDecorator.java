@@ -12,9 +12,8 @@
  * limitations under the License.
  */
 
-package org.jboss.errai.polymer.rebind;
+package org.jboss.errai.material.rebind;
 
-import gwt.material.design.client.base.MaterialWidget;
 import org.jboss.errai.codegen.Statement;
 import org.jboss.errai.codegen.exception.GenerationException;
 import org.jboss.errai.codegen.meta.MetaClass;
@@ -24,8 +23,8 @@ import org.jboss.errai.ioc.client.api.CodeDecorator;
 import org.jboss.errai.ioc.rebind.ioc.extension.IOCDecoratorExtension;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.Decorable;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.FactoryController;
-import org.jboss.errai.polymer.client.local.GwtMaterialBootstrap;
-import org.jboss.errai.polymer.client.local.GwtMaterialInitializer;
+import org.jboss.errai.material.client.local.GwtMaterialBootstrap;
+import org.jboss.errai.material.client.local.GwtMaterialInitializer;
 import org.jboss.errai.ui.rebind.TemplatedCodeDecorator;
 import org.jboss.errai.ui.shared.api.annotations.Templated;
 import org.jsoup.Jsoup;
@@ -34,7 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.PostConstruct;
-import javax.enterprise.util.TypeLiteral;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
