@@ -45,7 +45,7 @@ public interface MaterialWidgetFactory {
 
     java.util.Optional<MaterialMethodDefinition> getMethodDefIfExist(String tag, String method);
 
-    MaterialWidget invoke(String tag);
+    java.util.Optional<MaterialWidget> invoke(String tag);
 
 
 }

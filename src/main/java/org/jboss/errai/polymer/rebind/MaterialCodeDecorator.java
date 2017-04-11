@@ -16,11 +16,9 @@ package org.jboss.errai.polymer.rebind;
 
 import gwt.material.design.client.base.MaterialWidget;
 import org.jboss.errai.codegen.Statement;
-import org.jboss.errai.codegen.Variable;
 import org.jboss.errai.codegen.exception.GenerationException;
 import org.jboss.errai.codegen.meta.MetaClass;
 import org.jboss.errai.codegen.meta.MetaMethod;
-import org.jboss.errai.codegen.util.Refs;
 import org.jboss.errai.codegen.util.Stmt;
 import org.jboss.errai.ioc.client.api.CodeDecorator;
 import org.jboss.errai.ioc.rebind.ioc.extension.IOCDecoratorExtension;
@@ -28,14 +26,10 @@ import org.jboss.errai.ioc.rebind.ioc.injector.api.Decorable;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.FactoryController;
 import org.jboss.errai.polymer.client.local.GwtMaterialBootstrap;
 import org.jboss.errai.polymer.client.local.GwtMaterialInitializer;
-import org.jboss.errai.ui.rebind.DataFieldCodeDecorator;
 import org.jboss.errai.ui.rebind.TemplatedCodeDecorator;
 import org.jboss.errai.ui.shared.api.annotations.Templated;
-import org.jboss.errai.ui.shared.api.style.StyleBindingsRegistry;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +50,6 @@ import static org.jboss.errai.codegen.util.Stmt.*;
 public class MaterialCodeDecorator extends IOCDecoratorExtension<Templated> {
     private Document html;
     private List<Statement> stmts;
-    private static final String gwtMaterialElementMap = "gwtMaterialElementMap";
 
     private static final Logger logger = LoggerFactory.getLogger(MaterialCodeDecorator.class);
 
@@ -80,38 +73,13 @@ public class MaterialCodeDecorator extends IOCDecoratorExtension<Templated> {
         initTemplateParser(declaringClass); // ?
 
         stmts = new ArrayList<>();
-        stmts.add(declareVariable(gwtMaterialElementMap, new TypeLiteral<Map<String, MaterialWidget>>() {
-                },
-                newObject(new TypeLiteral<LinkedHashMap<String, MaterialWidget>>() {
-                }))
-        );
-
         stmts.add(invokeStatic(GwtMaterialBootstrap.class, "processTemplate", loadVariable(parentOfRootTemplateElementVarName),
                 Stmt.loadVariable(templateVarName).invoke("getContents").invoke("getText"),
                 TemplatedCodeDecorator.getTemplateFileName(declaringClass),
-                TemplatedCodeDecorator.getTemplateFragmentName(declaringClass), loadVariable("dataFieldElements")));
+                TemplatedCodeDecorator.getTemplateFragmentName(declaringClass), loadVariable("templateFieldsMap")));
 
         controller.getFactoryInitializaionStatements().add(Stmt.invokeStatic(GwtMaterialInitializer.class, "get").invoke("check"));
         controller.addInitializationStatementsToEnd(stmts);
-    }
-
-    /**TODO REWORK check
-     *
-     * @param className
-     * @return
-     */
-    private boolean checkIfWidgetSupported(MetaClass className) {
-        return className.getFullyQualifiedName().startsWith("gwt.material.design.client.ui");
-    }
-
-    private Element getElementFromTemplate(String name) {
-        Elements elms = html.body().getElementsByAttributeValue("data-field", name);
-        if (elms.size() > 1) {
-            throw new IllegalArgumentException("Duplicated tags " + name);
-        } else if (elms.size() == 1) {
-            return elms.get(0);
-        }
-        return null;
     }
 
     private void initTemplateParser(MetaClass declaringClass) {
@@ -123,7 +91,6 @@ public class MaterialCodeDecorator extends IOCDecoratorExtension<Templated> {
                             + filename + "] in class [" + declaringClass.getFullyQualifiedName()
                             + "].");
         }
-
         try {
             File file = new File(template.get());
             html = Jsoup.parse(file, "UTF-8", "http://localhost/");
