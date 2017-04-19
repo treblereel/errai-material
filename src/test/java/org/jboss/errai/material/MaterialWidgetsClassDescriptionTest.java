@@ -18,16 +18,23 @@ package org.jboss.errai.material;
 
 
 import com.google.common.reflect.TypeToken;
+import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Style;
+import com.google.gwt.junit.GWTMockUtilities;
+import com.google.gwt.junit.client.GWTTestCase;
+import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.ui.HasText;
+import com.google.gwtmockito.GwtMockitoTestRunner;
 import gwt.material.design.client.base.AbstractButton;
 import gwt.material.design.client.base.MaterialWidget;
 import gwt.material.design.client.constants.TextAlign;
 import gwt.material.design.client.constants.WavesType;
 import gwt.material.design.client.ui.*;
 import org.apache.commons.lang3.ClassUtils;
+import org.jboss.errai.material.client.local.GwtMaterialUtil;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +49,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  *         <p>
  *         Created by treblereel on 3/10/17.
  */
-public class MaterialWidgetsClassDescriptionTest {
+@RunWith(GwtMockitoTestRunner.class)
+public class MaterialWidgetsClassDescriptionTest{
     private static final Logger logger = LoggerFactory.getLogger(MaterialWidgetsClassDescriptionTest.class.getName());
 
 
@@ -55,7 +63,7 @@ public class MaterialWidgetsClassDescriptionTest {
     @Test
     public void materialLinkTest() throws IOException {
         Set<Method> methods = parseMethods(MaterialLink.class);
-        Assert.assertEquals(89, methods.size());
+        Assert.assertEquals(90, methods.size());
     }
 
     @Test

@@ -32,7 +32,12 @@
 
 package org.jboss.errai.material.client.local;
 
+import com.google.gwt.dom.client.Element;
+import com.google.gwt.user.client.ui.Widget;
 import gwt.material.design.client.base.MaterialWidget;
+import org.mvel2.util.Make;
+
+import java.util.Map;
 
 /**
  * @author Dmitrii Tikhomirov <chani@me.com>
@@ -45,7 +50,7 @@ public interface MaterialWidgetFactory {
 
     java.util.Optional<MaterialMethodDefinition> getMethodDefIfExist(String tag, String method);
 
-    java.util.Optional<MaterialWidget> invoke(String tag);
+    java.util.Optional<MaterialWidget> invoke(Element tag, Element param, java.util.Set<Widget> templateFieldsMap);
 
 
 }

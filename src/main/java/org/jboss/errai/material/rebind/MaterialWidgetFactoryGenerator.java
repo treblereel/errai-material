@@ -56,6 +56,8 @@ public class MaterialWidgetFactoryGenerator {
 
     private JMethod invoke;
 
+
+    // TODO some of the this props should be activated other way
     private static final String[] BLACKLISTED_PROPERTIES = {"FlexAlignItems", "TargetHistoryToken", "InitialClasses",
             "Id", "AccessKey", "Scrollspy", "DataAttribute", "ErrorHandler", "ErrorHandlerType", "Validators", "FlexJustifyContent",
             "Class", "Input", "Fullscreen", "Parent", "Label", "StylePrimaryName", "StyleName"};

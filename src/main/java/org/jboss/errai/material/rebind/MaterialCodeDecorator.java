@@ -18,6 +18,7 @@ import org.jboss.errai.codegen.Statement;
 import org.jboss.errai.codegen.exception.GenerationException;
 import org.jboss.errai.codegen.meta.MetaClass;
 import org.jboss.errai.codegen.meta.MetaMethod;
+import org.jboss.errai.codegen.util.Refs;
 import org.jboss.errai.codegen.util.Stmt;
 import org.jboss.errai.ioc.client.api.CodeDecorator;
 import org.jboss.errai.ioc.rebind.ioc.extension.IOCDecoratorExtension;
@@ -26,6 +27,7 @@ import org.jboss.errai.ioc.rebind.ioc.injector.api.FactoryController;
 import org.jboss.errai.material.client.local.GwtMaterialBootstrap;
 import org.jboss.errai.material.client.local.GwtMaterialInitializer;
 import org.jboss.errai.ui.rebind.TemplatedCodeDecorator;
+import org.jboss.errai.ui.shared.TemplateUtil;
 import org.jboss.errai.ui.shared.api.annotations.Templated;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -38,6 +40,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.jboss.errai.codegen.util.Stmt.*;
+import static org.jboss.errai.codegen.util.Stmt.invokeStatic;
 
 /**
  * Generates the code required for {@link Templated} classes.
@@ -70,8 +73,14 @@ public class MaterialCodeDecorator extends IOCDecoratorExtension<Templated> {
 
         initTemplateParser(declaringClass); // ?
 
+        final Statement component = Refs.get("instance");
+
+
+        final Statement rootTemplateElement = Stmt.invokeStatic(TemplateUtil.class, "getRootTemplateElement",
+                Stmt.loadVariable(parentOfRootTemplateElementVarName));
+
         stmts = new ArrayList<>();
-        stmts.add(invokeStatic(GwtMaterialBootstrap.class, "processTemplate", loadVariable(parentOfRootTemplateElementVarName),
+        stmts.add(invokeStatic(GwtMaterialBootstrap.class, "processTemplate", rootTemplateElement,
                 Stmt.loadVariable(templateVarName).invoke("getContents").invoke("getText"),
                 TemplatedCodeDecorator.getTemplateFileName(declaringClass),
                 TemplatedCodeDecorator.getTemplateFragmentName(declaringClass), loadVariable("templateFieldsMap")));
