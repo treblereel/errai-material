@@ -134,13 +134,6 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
                 if (dataFieldElements.containsKey(element.getAttribute(DATA_FIELD))) {
                     MaterialWidget widget = (MaterialWidget) dataFieldElements.get(element.getAttribute(DATA_FIELD));
                     processMaterialWidgetWithElementParent(parent, element, widget, false);
-
- /*                   GwtMaterialUtil.copyWidgetAttrsAndSetProperties(element, widget);
-                    templateFieldsMap.add(widget);
-                    parent.replaceChild(widget.getElement(), element);
-                    getNodeChildren(element).forEach(child -> process(widget, (Element) child));
-
-                    GwtMaterialUtil.copyWidgetAttrsAndSetProperties(element, widget);*/
                 } else {
                     throw new IllegalArgumentException("no such MaterialWidget with data-field = " + element.getAttribute(DATA_FIELD) + " in template " + templateFileName);
                 }
@@ -152,15 +145,6 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
             if (ifExist.isPresent()) {
                 MaterialWidget widget = ifExist.get();
                 processMaterialWidgetWithElementParent(parent, element, widget, true);
-/*                GwtMaterialUtil.copyWidgetAttrsAndSetProperties(element, widget);
-
-                container.add(widget);
-                templateFieldsMap.add(widget);
-                parent.replaceChild(widget.getElement(), element);
-
-                getNodeChildren(element).forEach(child -> process(widget, (Element) child));
-                GwtMaterialUtil.copyWidgetAttrsAndSetProperties(element, widget);*/
-
             }
         } else {
             //logger.warn("widget is simple " + element.getTagName() + " " + getNodeChildren(element).size());
@@ -197,26 +181,23 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
 
     private void processMaterialWidgetWithElementParent(Element parent, Element element, MaterialWidget widget, Boolean doInit) {
         GwtMaterialUtil.copyWidgetAttrsAndSetProperties(element, widget);
-        getNodeChildren(element).forEach(child -> process(widget, (Element) child));
         templateFieldsMap.add(widget);
         if (doInit) {
             container.add(widget);
         }
         parent.replaceChild(widget.getElement(), element);
-        //getNodeChildren(element).forEach(child -> process(widget, (Element) child));
-        GwtMaterialUtil.copyWidgetAttrsAndSetProperties(element, widget);
+        getNodeChildren(element).forEach(child -> process(widget, (Element) child));
+        //GwtMaterialUtil.copyWidgetAttrsAndSetProperties(element, widget);
     }
 
     private void processMaterialWidgetWithMaterialParent(MaterialWidget parent, Element element, MaterialWidget widget, Boolean doInit) {
-        GwtMaterialUtil.copyWidgetAttrsAndSetProperties(element, widget);
-        getNodeChildren(element).forEach(child -> process(widget, (Element) child));
         templateFieldsMap.add(widget);
         if (doInit) {
-            //container.add(widget);
             parent.add(widget);
         }else{
             parent.getElement().appendChild(widget.getElement());
         }
+        getNodeChildren(element).forEach(child -> process(widget, (Element) child));
         GwtMaterialUtil.copyWidgetAttrsAndSetProperties(element, widget);
     }
 
