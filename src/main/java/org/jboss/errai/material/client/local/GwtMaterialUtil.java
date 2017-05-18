@@ -76,6 +76,8 @@ public class GwtMaterialUtil {
 
     private static final String HTML_VOID_TAG_PATTERN = "<([m,M]aterial-\\w*)(\"[^\"]*\"|[^'\">])*/>";
     private static final String DATA_FIELD = "data-field";
+    private static final String[] tag_attr_white_list = {"href","style"};
+
     public static final Logger logger = LoggerFactory.getLogger(GwtMaterialUtil.class);
 
     static Class primitiveToBoxed(Class clazz) {
@@ -165,8 +167,6 @@ public class GwtMaterialUtil {
             return null;
     }
 
-
-
     private static boolean hasСhildren(Element elm) {
         if (elm != null && elm.getChildCount() != 0) {
             return true;
@@ -217,6 +217,8 @@ public class GwtMaterialUtil {
                 } else if (n.getNodeName().toLowerCase().equals("addstylenames")) {
                     if (!n.getNodeValue().trim().equals("")) {
                         obj.addStyleName(n.getNodeValue());
+/*                        obj.getElement().addClassName(n.getNodeValue());
+                        logger.warn("addstylenames " + n.getNodeValue());*/
                     }
                     attrToRemove.add(n);
                 } else if (n.getNodeName().toLowerCase().equals("self-closed")) {
@@ -228,10 +230,20 @@ public class GwtMaterialUtil {
             //remove attrs
             if (attrToRemove.size() > 0) {
                 attrToRemove.stream().forEach(r -> {
-                    obj.getElement().removeAttribute(r.getNodeName());
+                    if(!isWhiteListedAttr(r.getNodeName()))
+                        obj.getElement().removeAttribute(r.getNodeName());
                 });
             }
         }
+    }
+
+    private static boolean isWhiteListedAttr(String attr){
+       for(String a: tag_attr_white_list){
+           if(a.equals(attr)){
+               return true;
+           }
+       }
+       return false;
     }
 
     public static void copyWidgetAttrsAndSetProperties(Element e, MaterialWidget obj, String tag) {
@@ -299,7 +311,6 @@ public class GwtMaterialUtil {
         return "";
     }
 
-
     public static void compositeComponentReplace(final String componentType, final String templateFile, final Element field,
                                                  final Map<String, Element> dataFieldElements, final String fieldName) {
         try {
@@ -309,90 +320,6 @@ public class GwtMaterialUtil {
                     + componentType + ": " + t.getMessage(), t);
         }
     }
-
-    public static void compositeComponentReplace(final String componentType, final String templateFile, final Supplier<Widget> field,
-                                                 final Map<String, Element> dataFieldElements, final String fieldName) {
-        try {
-            compositeComponentReplace(componentType, templateFile, field.get(), dataFieldElements, fieldName);
-        } catch (final Throwable t) {
-            throw new RuntimeException("There was an error initializing the @DataField " + fieldName + " in the @Templated "
-                    + componentType + ": " + t.getMessage(), t);
-        }
-    }
-
-    /**
-     * Replace the {@link Element} with the data-field of the given
-     * {@link String} with the root {@link Element} of the given {@link UIObject}
-     */
-    private static void compositeComponentReplace(final String componentType, final String templateFile, final Widget field,
-                                                  final Map<String, Element> dataFieldElements, final String fieldName) {
-        if (field == null) {
-            throw new IllegalStateException("Widget to be composited into [" + componentType + "] field [" + fieldName
-                    + "] was null. Did you forget to @Inject or initialize this @DataField?");
-        }
-        final Element element = dataFieldElements.get(fieldName);
-        if (element == null) {
-            throw new IllegalStateException("Template [" + templateFile
-                    + "] did not contain data-field, id or class attribute for field [" + componentType + "." + fieldName + "]");
-        }
-        logger.info("Compositing @Replace [data-field=" + fieldName + "] element [" + element + "] with Component "
-                + field.getClass().getName() + " [" + field.getElement() + "]");
-
-        if (!element.getTagName().equals(field.getElement().getTagName())) {
-            logger.warn("Replacing Element type [" + element.getTagName() + "] in " + templateFile + "  with type ["
-                    + field.getElement().getTagName() + "] for " + fieldName + " in " + componentType);
-        }
-
-        final Element parentElement = element.getParentElement();
-        try {
-            if (field instanceof HasText && (!(field instanceof ElementWrapperWidget) || field.getElement().getChildCount() == 0)) {
-                Node firstNode = element.getFirstChild();
-                while (firstNode != null) {
-                    if (firstNode != element.getFirstChildElement())
-                        field.getElement().appendChild(element.getFirstChild());
-                    else {
-                        field.getElement().appendChild(element.getFirstChildElement());
-                    }
-                    firstNode = element.getFirstChild();
-                }
-            }
-            parentElement.replaceChild(field.getElement(), element);
-
-            final boolean hasI18nKey = !field.getElement().getAttribute("data-i18n-key").equals("");
-            final boolean hasI18nPrefix = !field.getElement().getAttribute("data-i18n-prefix").equals("");
-
-      /*
-       * Preserve template Element attributes.
-       */
-            final JsArray<Node> templateAttributes = getAttributes(element);
-            for (int i = 0; i < templateAttributes.length(); i++) {
-                final Node node = templateAttributes.get(i);
-                final String name = node.getNodeName();
-                final String value = node.getNodeValue();
-        /*
-         * If this new component is templated, do not overwrite i18n related attributes.
-         */
-                if ((name.equals("data-i18n-key") || name.equals("data-role") && value.equals("dummy"))
-                        && (hasI18nKey || hasI18nPrefix))
-                    continue;
-
-                final Element previous = dataFieldElements.put(fieldName, field.getElement());
-                final Element root = dataFieldElements.get("this");
-                if (root != null && root == previous) {
-                    dataFieldElements.put("this", field.getElement());
-                }
-            }
-        } catch (final Exception e) {
-            throw new IllegalStateException("Could not replace Element with [data-field=" + fieldName + "]" +
-                    " - Did you already @Insert or @Replace a parent Element?" +
-                    " Is an element referenced by more than one @DataField?", e);
-        }
-    }
-
-
-    public static native void onLoad(Object x) /*-{
-       x.@gwt.material.design.client.base.MaterialWidget::onLoad();
-    }-*/;
 
     public static native JsArray<Node> getAttributes(Element elem) /*-{
         return elem.attributes;

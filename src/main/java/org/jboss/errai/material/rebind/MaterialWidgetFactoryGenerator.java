@@ -73,7 +73,7 @@ public class MaterialWidgetFactoryGenerator {
 
     public static void main(String[] args) {
         logger.info("generate MaterialWidgetFactory");
-        new MaterialWidgetFactoryGenerator();
+        //new MaterialWidgetFactoryGenerator();
     }
 
     private void buildFactory() throws IOException {

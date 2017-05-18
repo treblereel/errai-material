@@ -237,7 +237,7 @@ public class MaterialWidgetFactoryImpl
     }
 
     @Override
-    public java.util.Optional<MaterialWidget> invoke(Element tagged, Element param, java.util.Set<Widget> templateFieldsMap) {
+    public java.util.Optional<MaterialWidget> invoke(Element tagged) {
         MaterialWidget result = null;
         String tag = tagged.getTagName().toLowerCase().replaceAll("-", "");
         tag = tag.toLowerCase().replaceAll("-", "");
@@ -354,7 +354,6 @@ public class MaterialWidgetFactoryImpl
         }
         if (tag.equals("materiallink")) {
             result = new MaterialLink();
-            result.getElement().setAttribute("href","#ololop");
         }
         if (tag.equals("materiallistbox")) {
             result = new MaterialListBox();
@@ -1922,7 +1921,7 @@ x.@gwt.material.design.client.base.HasError::setSuccess(Ljava/lang/String;)(s);
 x.@com.google.gwt.user.client.ui.Focusable::setTabIndex(I)(s);
 }-*/;
     public native void settarget_gwt_material_design_client_base_hashref(Object x, Object s) /*-{
-x.@gwt.material.design.client.base.HasHref::setTarget(Ljava/lang/String;)(s);
+x.@gwt.material.design.client.base.HasHref::setHref(Ljava/lang/String;)(s);
 }-*/;
     public native void settext_com_google_gwt_user_client_ui_hastext(Object x, Object s) /*-{
 x.@com.google.gwt.user.client.ui.HasText::setText(Ljava/lang/String;)(s);

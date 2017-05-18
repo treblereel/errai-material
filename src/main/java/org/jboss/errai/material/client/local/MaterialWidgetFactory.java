@@ -50,7 +50,7 @@ public interface MaterialWidgetFactory {
 
     java.util.Optional<MaterialMethodDefinition> getMethodDefIfExist(String tag, String method);
 
-    java.util.Optional<MaterialWidget> invoke(Element tag, Element param, java.util.Set<Widget> templateFieldsMap);
+    java.util.Optional<MaterialWidget> invoke(Element tag);
 
 
 }
