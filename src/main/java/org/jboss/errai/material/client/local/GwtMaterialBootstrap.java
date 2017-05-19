@@ -38,6 +38,8 @@ import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.Widget;
 import gwt.material.design.client.base.MaterialWidget;
+import gwt.material.design.client.constants.Position;
+import gwt.material.design.client.ui.MaterialTooltip;
 import org.jboss.errai.ioc.client.container.IOC;
 import org.jboss.errai.ui.shared.VisitContext;
 import org.slf4j.Logger;
@@ -118,7 +120,7 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
 
         composite.setInnerHTML(content);
 
-        //logger.warn("process  processTemplateMaterialTags = " + composite.getInnerHTML());
+        //logger.debug("process  processTemplateMaterialTags = " + composite.getInnerHTML());
 
         getNodeChildren(composite).forEach(c -> {
             process(composite, (Element) c);
@@ -128,7 +130,7 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
     }
 
     public void process(Element parent, Element element) {
-        //logger.warn("process  SimpleWidget = " + parent.getTagName() + " " + element.getTagName());
+        logger.debug("process  widget with commot tag as parent = " + parent.getTagName() + " " + element.getTagName());
         if (hasDataField(element)) {
             if (isMaterialWidget(element)) {
                 if (dataFieldElements.containsKey(element.getAttribute(DATA_FIELD))) {
@@ -145,9 +147,10 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
             if (ifExist.isPresent()) {
                 MaterialWidget widget = ifExist.get();
                 processMaterialWidgetWithElementParent(parent, element, widget, true);
+            } else {
+                throw new IllegalArgumentException(" material but we cant find it " + element.getTagName());
             }
         } else {
-            //logger.warn("widget is simple " + element.getTagName() + " " + getNodeChildren(element).size());
             if (hasСhildren(element)) {
                 getNodeChildren(element).forEach(p -> process(element, (Element) p));
             }
@@ -155,13 +158,14 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
 
     }
 
-    public void process(MaterialWidget parent, Element element) {
+    public MaterialWidget process(MaterialWidget parent, Element element) {
+        MaterialWidget widget = null;
+        logger.debug("process  widget with materialWidget as parent = " + parent.getClass().getSimpleName() + " " + element.getTagName());
         if (hasDataField(element)) {
             if (isMaterialWidget(element)) {
                 if (dataFieldElements.containsKey(element.getAttribute(DATA_FIELD))) {
-                    processMaterialWidgetWithMaterialParent(parent, element, (MaterialWidget) dataFieldElements.get(element.getAttribute(DATA_FIELD)), false);
-                } else {
-                    throw new IllegalArgumentException("no such MaterialWidget with data-field = " + element.getAttribute(DATA_FIELD) + " in template " + templateFileName);
+                    widget = (MaterialWidget) dataFieldElements.get(element.getAttribute(DATA_FIELD));
+                    processMaterialWidgetWithMaterialParent(parent, element, widget, false);
                 }
             } else {
                 getNodeChildren(element).forEach(child -> process(element, (Element) child));
@@ -169,13 +173,47 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
         } else if (element.getTagName().toLowerCase().contains("material")) {
             Optional<MaterialWidget> ifExist = widgetFactory.invoke(element);
             if (ifExist.isPresent()) {
-                processMaterialWidgetWithMaterialParent(parent, element, ifExist.get(), true);
+                widget = ifExist.get();
+                processMaterialWidgetWithMaterialParent(parent, element, widget, true);
+            } else {
+                processNonStandartMaterialWidget(parent, element);
             }
         } else {
             parent.getElement().appendChild(element);
             if (hasСhildren(element)) {
                 getNodeChildren(element).forEach(p -> process(p.getParentElement(), (Element) p));
             }
+        }
+        return widget;
+    }
+
+    private void processNonStandartMaterialWidget(MaterialWidget parent, Element element) {
+        if (element.getTagName().toLowerCase().contains("material-tooltip")) {
+            processMaterialTooltip(parent, element);
+        } else {
+            throw new IllegalArgumentException("unsupported material widget with tag " + element.getTagName());
+        }
+    }
+
+    private void processMaterialTooltip(MaterialWidget parent, Element element) {
+        if (hasСhildren(element) && getNodeChildren(element).size() == 1) {
+            element.getFirstChildElement();
+            MaterialWidget widget = process(parent, element.getFirstChildElement());
+            MaterialTooltip materialTooltip = new MaterialTooltip(widget);
+            if (element.hasAttribute("text")) {
+                materialTooltip.setText(element.getAttribute("text"));
+            }
+            if (element.hasAttribute("tooltipHTML")) {
+                materialTooltip.setHtml(element.getAttribute("tooltipHTML"));
+            }
+            if (element.hasAttribute("delayMs")) {
+                materialTooltip.setDelayMs(Integer.parseInt(element.getAttribute("delayMs")));
+            }
+            if (element.hasAttribute("position")) {
+                materialTooltip.setPosition((Position) GwtMaterialUtil.parseAttrValue(Position.class, element.getAttribute("position")));
+            }
+        } else {
+            throw new IllegalStateException("MaterialTooltip must contain one child widget");
         }
     }
 
@@ -194,7 +232,7 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
         templateFieldsMap.add(widget);
         if (doInit) {
             parent.add(widget);
-        }else{
+        } else {
             parent.getElement().appendChild(widget.getElement());
         }
         getNodeChildren(element).forEach(child -> process(widget, (Element) child));
