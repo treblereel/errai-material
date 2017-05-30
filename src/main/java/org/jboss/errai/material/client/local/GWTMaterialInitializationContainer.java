@@ -29,9 +29,6 @@ import javax.enterprise.context.ApplicationScoped;
 @ApplicationScoped
 public class GWTMaterialInitializationContainer extends FlowPanel {
 
-
-
-
     @PostConstruct
     public void init(){
         RootPanel.get().add(this);

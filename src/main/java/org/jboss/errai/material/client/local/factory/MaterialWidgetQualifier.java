@@ -14,27 +14,21 @@
  *
  */
 
-package org.jboss.errai.material.rebind;
+package org.jboss.errai.material.client.local.factory;
+
+import javax.inject.Qualifier;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * @author Dmitrii Tikhomirov <chani@me.com>
- *         <p>
- *         Created by treblereel on 3/9/17.
+ *         Created by treblereel on 5/29/17.
  */
-
-public class MaterialWidgetFactoryGenerator {
-    public static final String GWT_MATERIAL_CLIENT_PACKAGE_NAME = "org.jboss.errai.material.client";
-    public static final String DEFAULT_BUILD_LOCATION = "target/classes";
-
-
-
-    public static void main(String[] args) {
-        try {
-            new CommonMaterialWidgetGenerator();
-            new CustomeMaterialWidgetGenerator();
-        }catch (Exception e){
-            throw new IllegalStateException("can't build widgets factories " + e.getMessage() );
-        }
-    }
-
+@Qualifier
+@Target( {ElementType.TYPE, ElementType.FIELD} )
+@Retention(RUNTIME)
+public @interface MaterialWidgetQualifier {
 }

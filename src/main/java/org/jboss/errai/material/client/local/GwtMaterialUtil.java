@@ -54,29 +54,33 @@ import com.google.gwt.dom.client.Node;
 import com.google.gwt.regexp.shared.MatchResult;
 import com.google.gwt.regexp.shared.RegExp;
 import com.google.gwt.user.client.DOM;
-import com.google.gwt.user.client.ui.HasText;
-import com.google.gwt.user.client.ui.UIObject;
 import com.google.gwt.user.client.ui.Widget;
-import gwt.material.design.client.base.MaterialWidget;
-import org.jboss.errai.common.client.ui.ElementWrapperWidget;
+import gwt.material.design.client.ui.MaterialListBox;
 import org.jboss.errai.ioc.client.container.IOC;
-import org.jboss.errai.ui.shared.*;
+import org.jboss.errai.ui.shared.Visit;
+import org.jboss.errai.ui.shared.VisitContext;
+import org.jboss.errai.ui.shared.VisitContextMutable;
+import org.jboss.errai.ui.shared.Visitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.function.Supplier;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 
 /**
  * @author Dmitrii Tikhomirov <chani@me.com>
  *         Created by treblereel on 3/21/17.
  */
 public class GwtMaterialUtil {
-    private static final MaterialWidgetFactory materialWidgetFactory = IOC.getBeanManager().lookupBean(MaterialWidgetFactory.class).getInstance();
+    private static final MaterialWidgetFactoryHelper helper = IOC.getBeanManager().lookupBean(MaterialWidgetFactoryHelper.class).getInstance();
 
     private static final String HTML_VOID_TAG_PATTERN = "<([m,M]aterial-\\w*)(\"[^\"]*\"|[^'\">])*/>";
     private static final String DATA_FIELD = "data-field";
-    private static final String[] tag_attr_white_list = {"href","style"};
+    private static final String[] tag_attr_white_list = {"href", "style"};
 
     public static final Logger logger = LoggerFactory.getLogger(GwtMaterialUtil.class);
 
@@ -199,16 +203,32 @@ public class GwtMaterialUtil {
         return html;
     }
 
-    public static void copyWidgetAttrsAndSetProperties(Element e, MaterialWidget obj) {
-
+/*    public static void copyWidgetAttrsAndSetProperties(Element e, Widget obj) {
         String tag = obj.getClass().getSimpleName();
         if (materialWidgetFactory.getWidgetDefIfExist(tag).isPresent()) {
-            List<Node> attrToRemove = new ArrayList<>();
+            copyWidgetAttrsAndSetProperties(e,  obj);
+        }
+
+    }*/
+
+    public static String getTag(Element elm) {
+        return elm.getTagName().toLowerCase().replaceAll("-", "");
+    }
+
+    public static void copyWidgetAttrsAndSetProperties(Element e, Widget obj) {
+        String tag = obj.getClass().getSimpleName();
+        java.util.Optional<MaterialWidgetDefinition> materialWidgetDefinition = helper.getMaterialWidgetDefinition(tag);
+        copyWidgetAttrsAndSetProperties(e, obj, materialWidgetDefinition);
+    }
+
+    public static void copyWidgetAttrsAndSetProperties(Element e, Widget obj, Optional<MaterialWidgetDefinition> materialWidgetDefinition) {
+        List<Node> attrToRemove = new ArrayList<>();
+        if (materialWidgetDefinition.isPresent()) {
             JsArray<Node> nodes = getAttributes(e);
             for (int t = 0; t < nodes.length(); t++) {
                 Node n = nodes.get(t);
-                if (materialWidgetFactory.getMethodDefIfExist(tag, n.getNodeName()).isPresent()) {
-                    MaterialMethodDefinition definition = materialWidgetFactory.getMethodDefIfExist(tag, n.getNodeName()).get();
+                if (materialWidgetDefinition.get().getMethods().containsKey(n.getNodeName())) {
+                    MaterialMethodDefinition definition = materialWidgetDefinition.get().getMethods().get(n.getNodeName());
                     Object value = parseAttrValue(definition.getParameter(), n.getNodeValue());
                     if (value != null) {
                         definition.getFunction().accept(obj, value);
@@ -217,8 +237,6 @@ public class GwtMaterialUtil {
                 } else if (n.getNodeName().toLowerCase().equals("addstylenames")) {
                     if (!n.getNodeValue().trim().equals("")) {
                         obj.addStyleName(n.getNodeValue());
-/*                        obj.getElement().addClassName(n.getNodeValue());
-                        logger.warn("addstylenames " + n.getNodeValue());*/
                     }
                     attrToRemove.add(n);
                 } else if (n.getNodeName().toLowerCase().equals("self-closed")) {
@@ -230,23 +248,24 @@ public class GwtMaterialUtil {
             //remove attrs
             if (attrToRemove.size() > 0) {
                 attrToRemove.stream().forEach(r -> {
-                    if(!isWhiteListedAttr(r.getNodeName()))
+                    if (!isWhiteListedAttr(r.getNodeName()))
                         obj.getElement().removeAttribute(r.getNodeName());
                 });
             }
         }
+
     }
 
-    private static boolean isWhiteListedAttr(String attr){
-       for(String a: tag_attr_white_list){
-           if(a.equals(attr)){
-               return true;
-           }
-       }
-       return false;
+    private static boolean isWhiteListedAttr(String attr) {
+        for (String a : tag_attr_white_list) {
+            if (a.equals(attr)) {
+                return true;
+            }
+        }
+        return false;
     }
 
-    public static void copyWidgetAttrsAndSetProperties(Element e, MaterialWidget obj, String tag) {
+/*    public static void copyWidgetAttrsAndSetProperties(Element e, MaterialWidget obj, String tag) {
         if (materialWidgetFactory.getWidgetDefIfExist(tag).isPresent()) {
             List<Node> attrToRemove = new ArrayList<>();
             JsArray<Node> nodes = getAttributes(e);
@@ -277,7 +296,7 @@ public class GwtMaterialUtil {
                 });
             }
         }
-    }
+    }*/
 
     static Object parseAttrValue(Class clazz, String value) {
         if (clazz.equals(Boolean.class) || clazz.equals(boolean.class)) {
@@ -321,8 +340,13 @@ public class GwtMaterialUtil {
         }
     }
 
+
     public static native JsArray<Node> getAttributes(Element elem) /*-{
         return elem.attributes;
+    }-*/;
+
+    public static native void addOptionToListBox(MaterialListBox x, gwt.material.design.client.ui.html.Option s) /*-{
+        x.@gwt.material.design.client.ui.MaterialListBox::add(Lgwt/material/design/client/ui/html/Option;)(s);
     }-*/;
 
 }

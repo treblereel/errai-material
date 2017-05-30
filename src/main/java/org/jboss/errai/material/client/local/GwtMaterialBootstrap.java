@@ -39,13 +39,20 @@ import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.Widget;
 import gwt.material.design.client.base.MaterialWidget;
 import gwt.material.design.client.constants.Position;
+import gwt.material.design.client.ui.MaterialListBox;
+import gwt.material.design.client.ui.MaterialRadioButton;
 import gwt.material.design.client.ui.MaterialTooltip;
 import org.jboss.errai.ioc.client.container.IOC;
+import org.jboss.errai.material.client.local.factory.MaterialWidgetQualifier;
+import org.jboss.errai.material.client.local.factory.WidgetQualifier;
 import org.jboss.errai.ui.shared.VisitContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 
 /**
@@ -62,15 +69,14 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
     private Element template;
     private Element scanRoot;
 
-    final Set<Widget> templateFieldsMap = new HashSet();
-
     //TODO may contains root field
     private Map<String, Widget> dataFieldElements;
     private String originalTemplate;
     private String templateFileName;
     private String rootField;
 
-    private final MaterialWidgetFactory widgetFactory = IOC.getBeanManager().lookupBean(MaterialWidgetFactory.class).getInstance();
+    private final MaterialWidgetFactoryHelper helper = IOC.getBeanManager().lookupBean(MaterialWidgetFactoryHelper.class).getInstance();
+
     private final GWTMaterialInitializationContainer container = IOC.getBeanManager().lookupBean(GWTMaterialInitializationContainer.class).getInstance();
     private static final Logger logger = LoggerFactory.getLogger(GwtMaterialBootstrap.class);
 
@@ -135,6 +141,7 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
             if (hasDataField(element)) {
                 if (isMaterialWidget(element)) {
                     if (dataFieldElements.containsKey(element.getAttribute(DATA_FIELD))) {
+                        logger.warn("class is " + dataFieldElements.get(element.getAttribute(DATA_FIELD)).getClass().getSimpleName());
                         MaterialWidget widget = (MaterialWidget) dataFieldElements.get(element.getAttribute(DATA_FIELD));
                         processMaterialWidgetWithElementParent(parent, element, widget, false);
                     } else {
@@ -144,9 +151,10 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
                     getNodeChildren(element).forEach(child -> process(element, (Element) child));
                 }
             } else if (element.getTagName().toLowerCase().contains("material")) {
-                Optional<MaterialWidget> ifExist = widgetFactory.invoke(element);
+
+                Optional<Widget> ifExist = helper.getFactory(MaterialWidgetQualifier.class).invoke(element); //TODO What if nonMaterialWidget ???
                 if (ifExist.isPresent()) {
-                    MaterialWidget widget = ifExist.get();
+                    MaterialWidget widget = (MaterialWidget) ifExist.get();
                     processMaterialWidgetWithElementParent(parent, element, widget, true);
                 } else {
                     throw new IllegalArgumentException(" material but we cant find it " + element.getTagName());
@@ -162,21 +170,24 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
 
     }
 
-    public MaterialWidget process(MaterialWidget parent, Element element) {
-        MaterialWidget widget = null;
+    public Widget process(Widget parent, Element element) {
+        Widget widget = null;
         logger.debug("process  widget with materialWidget as parent = " + parent.getClass().getSimpleName() + " " + element.getTagName());
         if (element.getNodeType() == Node.ELEMENT_NODE) {
             if (hasDataField(element)) {
                 if (isMaterialWidget(element)) {
                     if (dataFieldElements.containsKey(element.getAttribute(DATA_FIELD))) {
-                        widget = (MaterialWidget) dataFieldElements.get(element.getAttribute(DATA_FIELD));
+                        logger.warn("class is " + dataFieldElements.get(element.getAttribute(DATA_FIELD)).getClass().getSimpleName());
+                        widget = dataFieldElements.get(element.getAttribute(DATA_FIELD));
                         processMaterialWidgetWithMaterialParent(parent, element, widget, false);
                     }
                 } else {
                     getNodeChildren(element).forEach(child -> process(element, (Element) child));
                 }
             } else {
-                Optional<MaterialWidget> ifExist = widgetFactory.invoke(element);
+
+
+                Optional<Widget> ifExist = helper.getFactory(MaterialWidgetQualifier.class).invoke(element);
                 if (ifExist.isPresent()) {
                     widget = ifExist.get();
                     processMaterialWidgetWithMaterialParent(parent, element, widget, true);
@@ -184,17 +195,36 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
                     processNonStandartMaterialWidget(parent, element);
                 }
             }
-        }else if (element.getNodeType() == Node.TEXT_NODE) {
+        } else if (element.getNodeType() == Node.TEXT_NODE) {
             parent.getElement().appendChild(element);
         }
         return widget;
     }
 
-    private void processNonStandartMaterialWidget(MaterialWidget parent, Element element) {
+    private void processNonStandartMaterialWidget(Widget parent, Element element) {
         logger.debug("process non-standart widget with materialWidget as parent = " + parent.getClass().getSimpleName() + " " + element.getTagName() + " " + element.getInnerHTML());
-
-        if (element.getTagName().toLowerCase().contains("material-tooltip")) {
+        String tag = element.getTagName().toLowerCase();
+        if (tag.contains("material-tooltip")) {
             processMaterialTooltip(parent, element);
+        } else if (tag.contains("material-radiobutton")) {
+
+         //   MaterialRadioButton materialRadioButton = (MaterialRadioButton) helper.invoke(element).get().getKey();
+
+            Widget materialRadioButton = helper.invoke(element).get().getKey();
+            GwtMaterialUtil.copyWidgetAttrsAndSetProperties(element, materialRadioButton);
+            if (helper.isExtendsMaterialWidget(parent)) {
+                ((MaterialWidget) parent).add(materialRadioButton);
+            } else {
+                parent.getElement().appendChild(materialRadioButton.getElement());
+            }
+        }else if (tag.contains("material-checkbox")) {
+            Widget widget =  helper.invoke(element).get().getKey();
+            GwtMaterialUtil.copyWidgetAttrsAndSetProperties(element, widget);
+            if (helper.isExtendsMaterialWidget(parent)) {
+                ((MaterialWidget) parent).add(widget);
+            } else {
+                parent.getElement().appendChild(widget.getElement());
+            }
         } else {
             parent.getElement().appendChild(element);
             if (hasСhildren(element)) {
@@ -203,10 +233,9 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
         }
     }
 
-    private void processMaterialTooltip(MaterialWidget parent, Element element) {
+    private void processMaterialTooltip(Widget parent, Element element) {
         if (hasСhildren(element) && getNodeChildren(element).size() == 1) {
-            element.getFirstChildElement();
-            MaterialWidget widget = process(parent, element.getFirstChildElement());
+            Widget widget = process(parent, element.getFirstChildElement());
             MaterialTooltip materialTooltip = new MaterialTooltip(widget);
             if (element.hasAttribute("text")) {
                 materialTooltip.setText(element.getAttribute("text"));
@@ -225,21 +254,24 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
         }
     }
 
-    private void processMaterialWidgetWithElementParent(Element parent, Element element, MaterialWidget widget, Boolean doInit) {
+    private void processMaterialWidgetWithElementParent(Element parent, Element element, Widget widget, Boolean doInit) {
         GwtMaterialUtil.copyWidgetAttrsAndSetProperties(element, widget);
-        templateFieldsMap.add(widget);
         if (doInit) {
             container.add(widget);
         }
         parent.replaceChild(widget.getElement(), element);
         getNodeChildren(element).forEach(child -> process(widget, (Element) child));
-        //GwtMaterialUtil.copyWidgetAttrsAndSetProperties(element, widget);
     }
 
-    private void processMaterialWidgetWithMaterialParent(MaterialWidget parent, Element element, MaterialWidget widget, Boolean doInit) {
-        templateFieldsMap.add(widget);
-        if (doInit) {
-            parent.add(widget);
+    private void processMaterialWidgetWithMaterialParent(Widget parent, Element element, Widget widget, Boolean doInit) {
+        if (parent.getClass().equals(MaterialListBox.class)) {
+            GwtMaterialUtil.addOptionToListBox((MaterialListBox) parent, (gwt.material.design.client.ui.html.Option) widget);
+        } else if (doInit) {
+            if (helper.isExtendsMaterialWidget(parent)) {
+                ((MaterialWidget) parent).add(widget);
+            } else {
+                parent.getElement().appendChild(widget.getElement());
+            }
         } else {
             parent.getElement().appendChild(widget.getElement());
         }

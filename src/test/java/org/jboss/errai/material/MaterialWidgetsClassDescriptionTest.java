@@ -18,20 +18,19 @@ package org.jboss.errai.material;
 
 
 import com.google.common.reflect.TypeToken;
-import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Style;
-import com.google.gwt.junit.GWTMockUtilities;
-import com.google.gwt.junit.client.GWTTestCase;
-import com.google.gwt.user.client.DOM;
+import com.google.gwt.user.client.ui.CheckBox;
 import com.google.gwt.user.client.ui.HasText;
 import com.google.gwtmockito.GwtMockitoTestRunner;
 import gwt.material.design.client.base.AbstractButton;
+import gwt.material.design.client.base.BaseCheckBox;
 import gwt.material.design.client.base.MaterialWidget;
 import gwt.material.design.client.constants.TextAlign;
 import gwt.material.design.client.constants.WavesType;
 import gwt.material.design.client.ui.*;
 import org.apache.commons.lang3.ClassUtils;
-import org.jboss.errai.material.client.local.GwtMaterialUtil;
+import org.jboss.errai.common.client.dom.Option;
+import org.jboss.errai.material.rebind.MaterialRebindUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,7 +49,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *         Created by treblereel on 3/10/17.
  */
 @RunWith(GwtMockitoTestRunner.class)
-public class MaterialWidgetsClassDescriptionTest{
+public class MaterialWidgetsClassDescriptionTest {
     private static final Logger logger = LoggerFactory.getLogger(MaterialWidgetsClassDescriptionTest.class.getName());
 
 
@@ -83,7 +82,7 @@ public class MaterialWidgetsClassDescriptionTest{
         Set<Method> methods = new HashSet<>();
         ClassUtils.getAllInterfaces(c).stream().forEach(ifaces -> {
             if (ifaces.getName().startsWith("gwt.material.design.client.base") ||
-                    ifaces.getName().startsWith("com.google.gwt.user.client.ui.")
+                    ifaces.getName().startsWith("com.google.gwt.user.client.ui")
                     ) {
                 Arrays.stream(ifaces.getMethods()).forEach(m -> {
                     if (m.getName().startsWith("set")) {
@@ -100,16 +99,47 @@ public class MaterialWidgetsClassDescriptionTest{
                     methods.add(m);
                 }
             }
-
         });
-
-        methods.stream().forEach(m -> {
-            //    logger.warn(m.getName() + m.getParameters().length + m.getModifiers() + " " + Modifier.isPublic(m.getModifiers())+ " " + m.getDeclaringClass().getCanonicalName());
-
-        });
-
-
         return methods;
+    }
+
+    @Test
+    public void checkIsExtendsMaterialWidget() {
+        Assert.assertTrue(MaterialRebindUtils.isExtendsMaterialWidget(MaterialLabel.class));
+        Assert.assertTrue(MaterialRebindUtils.isExtendsMaterialWidget(MaterialButton.class));
+        Assert.assertFalse(MaterialRebindUtils.isExtendsMaterialWidget(MaterialRadioButton.class));
+    }
+
+    @Test
+    public void checkIsExtends() {
+        Assert.assertTrue(MaterialRebindUtils.isExtends(MaterialLabel.class, MaterialWidget.class));
+        Assert.assertTrue(MaterialRebindUtils.isExtends(MaterialRadioButton.class, CheckBox.class));
+        Assert.assertTrue(MaterialRebindUtils.isExtends(MaterialCheckBox.class, BaseCheckBox.class));
+        Assert.assertFalse(MaterialRebindUtils.isExtends(MaterialRadioButton.class, MaterialWidget.class));
+    }
+
+    @Test
+    public void methodsMaterialTextBoxTest() throws IOException {
+        Set<Method> methods = parseMethods(MaterialTextBox.class);
+        methods.stream().sorted(Comparator.comparing(Method::getName)).forEach(m -> {
+            // logger.warn(" m " + m.getName() + " ");
+        });
+        Assert.assertEquals(110, methods.size());
+    }
+
+    @Test
+    public void methodsMaterialRadioButtonTest() throws IOException {
+
+        Map<String, Option> map = new HashMap();
+
+/*        Set<String> ifaces = new HashSet();
+
+        ifaces.add("com.google.gwt.user.client.ui");
+        ifaces.add("gwt.material.design.client.base");
+        Set<Method> methods = new HashSet();
+
+        //MaterialRebindUtils.findAllSettableMethods(MaterialRadioButton.class, methods);
+        Assert.assertEquals(27, methods.size());*/
     }
 
     @Test
@@ -233,7 +263,6 @@ public class MaterialWidgetsClassDescriptionTest{
         Assert.assertEquals(result, GwtMaterialUtil.closeVoidTags(input));
 
     }*/
-
 
 
 }

@@ -22,7 +22,10 @@ import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.reflect.ConstructorUtils;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.Optional;
 
 /**
  * @author Dmitrii Tikhomirov <chani@me.com>
@@ -30,6 +33,8 @@ import java.lang.reflect.Modifier;
  */
 public class MaterialRebindUtils {
     static final String GWT_MATERIAL_COMMON_PACKAGE = "gwt.material.design.client.ui.";
+    static final String GWT_MATERIAL_ADDINS_PACKAGE = "gwt.material.design.addins.client.";
+    static final String GWT_MATERIAL_HTML_PACKAGE = "gwt.material.design.client.ui.html.";
 
 
     static boolean hasParameterlessConstructor(Class<?> clazz) {
@@ -43,15 +48,21 @@ public class MaterialRebindUtils {
     }
 
     static boolean isWidgetSupported(ClassPath.ClassInfo info) {
-        if (!info.getName().startsWith(GWT_MATERIAL_COMMON_PACKAGE)) {
+        if (!info.getName().startsWith(GWT_MATERIAL_COMMON_PACKAGE) && !info.getName().startsWith(GWT_MATERIAL_ADDINS_PACKAGE)
+                && !info.getName().startsWith(GWT_MATERIAL_HTML_PACKAGE)
+                ) {
             return false;
         }
         return !Modifier.isAbstract(info.getClass().getModifiers()) && isExtendsMaterialWidget(info.load()) && hasParameterlessConstructor(info.load());
     }
 
-    static Boolean isExtendsMaterialWidget(Class<?> widget) {
+    public static Boolean isExtendsMaterialWidget(Class<?> widget) {
+        return isExtends(widget, MaterialWidget.class);
+    }
+
+    public static Boolean isExtends(Class<?> widget, Class isExtends) {
         for (Class<?> clazz : ClassUtils.getAllSuperclasses(widget)) {
-            if (clazz.equals(MaterialWidget.class)) {
+            if (clazz.equals(isExtends)) {
                 return true;
             }
         }
@@ -68,4 +79,5 @@ public class MaterialRebindUtils {
         }
         return clazz;
     }
+
 }
