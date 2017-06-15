@@ -70,4 +70,8 @@ public interface MaterialWidgetFactory {
 
     Optional<Boolean> isExtendsMaterialWidget(String tag);
 
+    Boolean isWidgetExist(Widget tagged);
+
+    Boolean isWidgetExist(String tag);
+
 }

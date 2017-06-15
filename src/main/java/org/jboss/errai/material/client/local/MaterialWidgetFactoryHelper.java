@@ -41,6 +41,13 @@ public class MaterialWidgetFactoryHelper {
     @WidgetQualifier
     private MaterialWidgetFactory gwtNonMaterialWidgetFactory;
 
+    public Boolean isWidgetSupported(String tag){
+        if(materialWidgetFactory.isWidgetExist(tag) || gwtNonMaterialWidgetFactory.isWidgetExist(tag)){
+            return true;
+        }
+        return false;
+    }
+
     public Boolean isExtendsMaterialWidget(Widget tagged){
         return isExtendsMaterialWidget(tagged.getClass().getSimpleName());
     }

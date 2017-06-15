@@ -30,6 +30,7 @@ import gwt.material.design.client.constants.WavesType;
 import gwt.material.design.client.ui.*;
 import org.apache.commons.lang3.ClassUtils;
 import org.jboss.errai.common.client.dom.Option;
+import org.jboss.errai.material.client.local.GwtMaterialUtil;
 import org.jboss.errai.material.rebind.MaterialRebindUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -235,11 +236,30 @@ public class MaterialWidgetsClassDescriptionTest {
 
     }
 
-/*    @Test
+    //@Test
+    public void testSelfClosingTagReplacerSimpleDiv(){
+        Assert.assertEquals("<div self-closed=\"true\"></div>", GwtMaterialUtil.closeVoidTags("<div />"));
+    }
+
+    //@Test
+    public void testSelfClosingTagReplacerSimpleDivDataField(){
+        Assert.assertEquals("<div data-field=\"div\" self-closed=\"true\"></div>", GwtMaterialUtil.closeVoidTags("<div data-field=\"div\"/>"));
+    }
+
+    //@Test
+    public void testSelfClosingTagReplacerMaterialButton(){
+        Assert.assertEquals("<material-button self-closed=\"true\"></material-button>", GwtMaterialUtil.closeVoidTags("<material-button/>"));
+    }
+
+
+    //@Test
     public void testSelfClosingTagReplacer() {
-        String input = "<!DOCTYPE html\n" +
-                "<div data-field=\"root\" id=\"root\"><material-button/>" +
+        String input = "<div data-field=\"root\" id=\"root\">" +
                 "<material-button />" +
+                "<div />" +
+                "<div/>" +
+                "<div data-field=\"div\"/>" +
+                "<div data-field=\"div\" />" +
                 "<Material-button/>" +
                 "<Material-button />" +
                 "<Material-button text=\"Primary\" waves=\"LIGHT\" textColor=\"WHITE\" iconType=\"POLYMER\" iconPosition=\"LEFT\" />\n" +
@@ -254,15 +274,15 @@ public class MaterialWidgetsClassDescriptionTest {
                 "\n" +
                 "</div>";
 
-        String result = "<!DOCTYPE html\n" +
-                "<div data-field=\"root\" id=\"root\"><material-button self-closed=\"true\"></material-button><material-button self-closed=\"true\"></material-button><Material-button self-closed=\"true\"></Material-button><Material-button self-closed=\"true\"></Material-button><Material-button text=\"Primary\" waves=\"LIGHT\" textColor=\"WHITE\" iconType=\"POLYMER\" iconPosition=\"LEFT\" self-closed=\"true\"></Material-button>\n" +
-                "<material-button text=\"Primary\" waves=\"LIGHT\" textColor=\"WHITE\" iconType=\"POLYMER\" iconPosition=\"LEFT\" self-closed=\"true\"></material-button>\n" +
-                "<material-dropdown activator=\"dp-4\" belowOrigin=\"false\" constrainWidth=\"false\"><material-link text=\"First\" self-closed=\"true\"></material-link><material-link text=\" Second \"><material-badge text=\"1 new \" textColor=\"WHITE\" self-closed=\"true\"></material-badge></material-link><material-link text=\"Third\" self-closed=\"true\"></material-link></material-dropdown>\n" +
-                "</div>";
+        String result =
+                "<div data-field=\"root\" id=\"root\"><material-button self-closed=\"true\"></material-button><div self-closed=\"true\"></div><div self-closed=\"true\"></div><div data-field=\"div\" self-closed=\"true\"></div><div data-field=\"div\" self-closed=\"true\"></div><Material-button self-closed=\"true\"></Material-button><Material-button self-closed=\"true\"></Material-button><Material-button text=\"Primary\" waves=\"LIGHT\" textColor=\"WHITE\" iconType=\"POLYMER\" iconPosition=\"LEFT\" self-closed=\"true\"></Material-button>\n" +
+                        "<material-button text=\"Primary\" waves=\"LIGHT\" textColor=\"WHITE\" iconType=\"POLYMER\" iconPosition=\"LEFT\" self-closed=\"true\"></material-button>\n" +
+                        "<material-dropdown activator=\"dp-4\" belowOrigin=\"false\" constrainWidth=\"false\"><material-link text=\"First\" self-closed=\"true\"></material-link><material-link text=\" Second \"><material-badge text=\"1 new \" textColor=\"WHITE\" self-closed=\"true\"></material-badge></material-link><material-link text=\"Third\" self-closed=\"true\"></material-link></material-dropdown>\n" +
+                        "</div>";
 
         Assert.assertEquals(result, GwtMaterialUtil.closeVoidTags(input));
 
-    }*/
+    }
 
 
 }

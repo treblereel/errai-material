@@ -56,6 +56,9 @@ import com.google.gwt.regexp.shared.RegExp;
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.ui.Widget;
 import gwt.material.design.client.ui.MaterialListBox;
+import gwt.material.design.client.ui.MaterialNavBar;
+import gwt.material.design.client.ui.MaterialTab;
+import gwt.material.design.client.ui.html.UnorderedList;
 import org.jboss.errai.ioc.client.container.IOC;
 import org.jboss.errai.ui.shared.Visit;
 import org.jboss.errai.ui.shared.VisitContext;
@@ -77,8 +80,9 @@ import java.util.Optional;
  */
 public class GwtMaterialUtil {
     private static final MaterialWidgetFactoryHelper helper = IOC.getBeanManager().lookupBean(MaterialWidgetFactoryHelper.class).getInstance();
-
-    private static final String HTML_VOID_TAG_PATTERN = "<([m,M]aterial-\\w*)(\"[^\"]*\"|[^'\">])*/>";
+    //private static  MaterialWidgetFactoryHelper helper ;
+    private static final String HTML_VOID_TAG_PATTERN = "<([m,M]aterial-\\w*|div)(\"[^\"]*\"|[^'\">])*/>";
+    //private static final String HTML_VOID_TAG_PATTERN = "<(\\w*)(\"[^\"]*\"|[^'\">])*/>";
     private static final String DATA_FIELD = "data-field";
     private static final String[] tag_attr_white_list = {"href", "style"};
 
@@ -203,14 +207,6 @@ public class GwtMaterialUtil {
         return html;
     }
 
-/*    public static void copyWidgetAttrsAndSetProperties(Element e, Widget obj) {
-        String tag = obj.getClass().getSimpleName();
-        if (materialWidgetFactory.getWidgetDefIfExist(tag).isPresent()) {
-            copyWidgetAttrsAndSetProperties(e,  obj);
-        }
-
-    }*/
-
     public static String getTag(Element elm) {
         return elm.getTagName().toLowerCase().replaceAll("-", "");
     }
@@ -265,39 +261,6 @@ public class GwtMaterialUtil {
         return false;
     }
 
-/*    public static void copyWidgetAttrsAndSetProperties(Element e, MaterialWidget obj, String tag) {
-        if (materialWidgetFactory.getWidgetDefIfExist(tag).isPresent()) {
-            List<Node> attrToRemove = new ArrayList<>();
-            JsArray<Node> nodes = getAttributes(e);
-            for (int t = 0; t < nodes.length(); t++) {
-                Node n = nodes.get(t);
-                if (materialWidgetFactory.getMethodDefIfExist(tag, n.getNodeName()).isPresent()) {
-                    MaterialMethodDefinition definition = materialWidgetFactory.getMethodDefIfExist(tag, n.getNodeName()).get();
-                    Object value = parseAttrValue(definition.getParameter(), n.getNodeValue());
-                    if (value != null) {
-                        definition.getFunction().accept(obj, value);
-                        attrToRemove.add(n);
-                    }
-                } else if (n.getNodeName().toLowerCase().equals("addstylenames")) {
-                    if (!n.getNodeValue().trim().equals("")) {
-                        obj.addStyleName(n.getNodeValue());
-                    }
-                    attrToRemove.add(n);
-                } else if (n.getNodeName().toLowerCase().equals("self-closed")) {
-                    attrToRemove.add(n);
-                } else {
-                    obj.getElement().setAttribute(n.getNodeName(), n.getNodeValue());
-                }
-            }
-            //remove attrs
-            if (attrToRemove.size() > 0) {
-                attrToRemove.stream().forEach(r -> {
-                    obj.getElement().removeAttribute(r.getNodeName());
-                });
-            }
-        }
-    }*/
-
     static Object parseAttrValue(Class clazz, String value) {
         if (clazz.equals(Boolean.class) || clazz.equals(boolean.class)) {
             return new Boolean(value);
@@ -345,8 +308,28 @@ public class GwtMaterialUtil {
         return elem.attributes;
     }-*/;
 
+    public static native void attach(Widget x) /*-{
+        x.@com.google.gwt.user.client.ui.Widget::onAttach()();
+    }-*/;
+
     public static native void addOptionToListBox(MaterialListBox x, gwt.material.design.client.ui.html.Option s) /*-{
         x.@gwt.material.design.client.ui.MaterialListBox::add(Lgwt/material/design/client/ui/html/Option;)(s);
+    }-*/;
+
+    public static native void initializeMaterialTab(MaterialTab x) /*-{
+        x.@gwt.material.design.client.ui.MaterialTab::initialize()();
+    }-*/;
+
+    public static native void addWidgetItemToMaterialTab(MaterialTab x, Widget s) /*-{
+        x.@gwt.material.design.client.ui.MaterialTab::add(Lcom/google/gwt/user/client/ui/Widget;)(s);
+    }-*/;
+
+    public static native void addWidgetItemToUnorderedList(UnorderedList x, Widget s) /*-{
+        x.@gwt.material.design.client.ui.html.UnorderedList::add(Lcom/google/gwt/user/client/ui/Widget;)(s);
+    }-*/;
+
+    public static native void addWidgetToMaterialNavBar(Widget x, Widget s) /*-{
+        x.@gwt.material.design.client.ui.MaterialNavBar::add(Lcom/google/gwt/user/client/ui/Widget;)(s);
     }-*/;
 
 }

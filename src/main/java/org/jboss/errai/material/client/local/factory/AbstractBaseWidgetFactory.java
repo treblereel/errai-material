@@ -36,7 +36,6 @@ import com.google.gwt.dom.client.Element;
 import com.google.gwt.user.client.ui.Widget;
 import org.jboss.errai.material.client.local.MaterialMethodDefinition;
 import org.jboss.errai.material.client.local.MaterialWidgetDefinition;
-import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -53,7 +52,6 @@ public abstract class AbstractBaseWidgetFactory implements MaterialWidgetFactory
 
 
     public Optional<Boolean> isExtendsMaterialWidget(String tag){
-        LoggerFactory.getLogger(this.getClass().getSimpleName()).warn(" tag " + tag.toLowerCase() + " " + widgets.containsKey(tag.toLowerCase()) + " " + widgets.size());
         if (widgets.containsKey(tag.toLowerCase())) {
             return Optional.of(widgets.get(tag.toLowerCase()).getExtendsMaterialWidget());
         }
@@ -85,6 +83,14 @@ public abstract class AbstractBaseWidgetFactory implements MaterialWidgetFactory
             return Optional.of(defaultMethods.get(method.toLowerCase()));
         }
         return Optional.empty();
+    }
+
+    public Boolean isWidgetExist(Widget tagged){
+        return isWidgetExist(tagged.getElement().getTagName());
+    }
+
+    public Boolean isWidgetExist(String tag){
+        return widgets.containsKey(tag);
     }
 
     public abstract Optional<Widget> invoke(Element element);

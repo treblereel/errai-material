@@ -30,23 +30,37 @@
  *
  */
 
-package org.jboss.errai.material.client.local;
+/*
+ *
+ *  * Licensed under the Apache License, Version 2.0 (the "License");
+ *  * you may not use this file except in compliance with the License.
+ *  * You may obtain a copy of the License at
+ *  *
+ *  *       http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  * See the License for the specific language governing permissions and
+ *  * limitations under the License.
+ *
+ */
+
+package org.jboss.errai.material.client.local.factory;
 
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Node;
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.ui.Composite;
-import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.Widget;
 import gwt.material.design.client.base.MaterialWidget;
 import gwt.material.design.client.constants.Position;
-import gwt.material.design.client.ui.MaterialListBox;
-import gwt.material.design.client.ui.MaterialNavBar;
-import gwt.material.design.client.ui.MaterialTab;
 import gwt.material.design.client.ui.MaterialTooltip;
 import gwt.material.design.jquery.client.api.JQuery;
 import org.jboss.errai.ioc.client.container.IOC;
-import org.jboss.errai.material.client.local.factory.MaterialWidgetQualifier;
+import org.jboss.errai.material.client.local.GWTMaterialInitializationContainer;
+import org.jboss.errai.material.client.local.GwtMaterialUtil;
+import org.jboss.errai.material.client.local.MaterialWidgetFactoryHelper;
 import org.jboss.errai.ui.shared.VisitContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,19 +149,21 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
             content = scanRoot.getInnerHTML();
         }
 
-
-        composite.setInnerHTML(content);
+        Element process = template = DOM.createDiv();
+        process.setInnerHTML(content);
+        //composite.setInnerHTML(content);
 
         MaterialWidget wrapper = new MaterialWidget(JQuery.$(composite));
 
         //w.add(new MaterialLabel("TEST"));
 
-        logger.debug("process  processTemplateMaterialTags = " + composite.getInnerHTML() + " " + composite.getTagName() + " " + wrapper.getClass());
+        logger.debug("process  processTemplateMaterialTags = " + process.getInnerHTML() + " " + process.getTagName() + " " + wrapper.getClass());
 
-        getNodeChildren(composite).forEach(c -> {
-            process(wrapper, (Element) c);
-        });
-
+        if(process.getInnerHTML().trim().length() > 0) {
+            getNodeChildren(process.getFirstChildElement()).forEach(c -> {
+                process(wrapper, (Element) c);
+            });
+        }
 
     }
 
@@ -193,7 +209,13 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
                 if (isMaterialWidget(element)) {
                     if (dataFieldElements.containsKey(element.getAttribute(DATA_FIELD))) {
                         widget = dataFieldElements.get(element.getAttribute(DATA_FIELD));
-                        processMaterialWidgetWithMaterialParent(parent, element, widget, false);
+                        logger.warn("is material " + " " + widget.getClass().getSimpleName() + " " + isMaterialWidget(widget.getClass().getSimpleName()));
+
+                        if(isMaterialWidget(widget.getClass().getSimpleName())){
+                            processMaterialWidgetWithMaterialParent(parent, element,(MaterialWidget) widget, true);
+                        }else{
+                            processMaterialWidgetWithMaterialParent(parent, element,  new MaterialWidget(JQuery.$(widget)), true);
+                        }
                     }
                 } else {
                         getNodeChildren(element).forEach(child -> process(new MaterialWidget(JQuery.$(element)), (Element) child));
@@ -202,7 +224,9 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
                 Optional<Widget> ifExist = helper.getFactory(MaterialWidgetQualifier.class).invoke(element);
                 if (ifExist.isPresent()) {
                     widget = ifExist.get();
-                    processMaterialWidgetWithMaterialParent(parent, element, widget, true);
+
+                    logger.warn("is material " + " " + widget.getClass().getSimpleName() + " " + isMaterialWidget(widget.getClass().getSimpleName()));
+                    processMaterialWidgetWithMaterialParent(parent, element,(MaterialWidget) widget, true);
                 } else {
                     processNonStandartMaterialWidget(parent, element);
                 }
@@ -256,7 +280,7 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
                 materialTooltip.setDelayMs(Integer.parseInt(element.getAttribute("delayMs")));
             }
             if (element.hasAttribute("position")) {
-                materialTooltip.setPosition((Position) GwtMaterialUtil.parseAttrValue(Position.class, element.getAttribute("position")));
+           //     materialTooltip.setPosition((Position) GwtMaterialUtil.parseAttrValue(Position.class, element.getAttribute("position")));
             }
         } else {
             throw new IllegalStateException("MaterialTooltip must contain one child widget");
@@ -305,11 +329,13 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
      * @param widget
      * @param doInit
      */
-    private void processMaterialWidgetWithMaterialParent(MaterialWidget parent, Element element, Widget widget, Boolean doInit) {
+    private void processMaterialWidgetWithMaterialParent(MaterialWidget parent, Element element, MaterialWidget widget, Boolean doInit) {
         logger.warn("processMaterialWidgetWithMaterialParent parent:"+parent.getElement().getTagName() + " " + element.getTagName() + " " + widget.getClass().getSimpleName());
-
-        getNodeChildren(element).forEach(child -> process((MaterialWidget) widget, (Element) child));
+        GwtMaterialUtil.copyWidgetAttrsAndSetProperties(element, widget);
         parent.add(widget);
+
+        getNodeChildren(element).forEach(child -> process(widget, (Element) child));
+        GwtMaterialUtil.copyWidgetAttrsAndSetProperties(element, widget);
 
 
 /*        boolean processChildren = true;

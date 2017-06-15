@@ -36,7 +36,7 @@ public abstract class MaterialWidgetGenerator {
 
     // TODO some of the this props should be activated other way
     protected static final String[] BLACKLISTED_PROPERTIES = {"FlexAlignItems", "TargetHistoryToken", "InitialClasses",
-            "Id", "AccessKey", "Scrollspy", "DataAttribute", "ErrorHandler", "ErrorHandlerType", "Validators", "FlexJustifyContent",
+            "Id", "AccessKey", "DataAttribute", "ErrorHandler", "ErrorHandlerType", "Validators", "FlexJustifyContent",
             "Class", "Input", "Fullscreen", "Parent", "StylePrimaryName", "StyleName"};
 
     protected JCodeModel jCodeModel = new JCodeModel();

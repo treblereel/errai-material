@@ -24,6 +24,7 @@ import com.sun.codemodel.*;
 import com.sun.codemodel.writer.SingleStreamCodeWriter;
 import gwt.material.design.client.base.MaterialWidget;
 import gwt.material.design.client.constants.Type;
+import org.jboss.errai.material.client.local.GwtMaterialUtil;
 import org.jboss.errai.material.client.local.MaterialMethodDefinition;
 import org.jboss.errai.material.client.local.MaterialWidgetDefinition;
 import org.jboss.errai.material.client.local.factory.AbstractBaseWidgetFactory;
@@ -114,7 +115,11 @@ public class CommonMaterialWidgetGenerator extends MaterialWidgetGenerator {
         jInvokeBlockCandidate.add(JExpr.ref("candidate").invoke("getElement").invoke("setAttribute").arg("class").arg(JExpr.ref("sb").invoke("toString").invoke("trim")));
 
         JClass optional = jCodeModel.directClass(Optional.class.getCanonicalName());
-        invoke.body()._if(JExpr.ref("result").ne(JExpr._null()))._then()._return(optional.staticInvoke("of").arg(JExpr.ref("result")));
+        JClass gwtMaterialUtil = jCodeModel.directClass(GwtMaterialUtil.class.getCanonicalName());
+
+        JBlock returnBlock = invoke.body()._if(JExpr.ref("result").ne(JExpr._null()))._then();
+        returnBlock.directStatement("org.jboss.errai.material.client.local.GwtMaterialUtil.copyWidgetAttrsAndSetProperties(tagged, result);");
+        returnBlock._return(optional.staticInvoke("of").arg(JExpr.ref("result")));
 
         invoke.body()._return(optional.staticInvoke("empty"));
     }
