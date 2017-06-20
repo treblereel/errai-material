@@ -44,6 +44,7 @@ import gwt.material.design.client.ui.MaterialListBox;
 import gwt.material.design.client.ui.MaterialNavBar;
 import gwt.material.design.client.ui.MaterialTab;
 import gwt.material.design.client.ui.MaterialTooltip;
+import gwt.material.design.client.ui.html.Div;
 import gwt.material.design.jquery.client.api.JQuery;
 import org.jboss.errai.ioc.client.container.IOC;
 import org.jboss.errai.material.client.local.factory.MaterialWidgetQualifier;
@@ -136,15 +137,18 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
         }
 
 
-        composite.setInnerHTML(content);
+      //  composite.setInnerHTML(content);
 
         MaterialWidget wrapper = new MaterialWidget(JQuery.$(composite));
 
+        Div div = new Div();
+        div.getElement().setInnerHTML(content);
+        //composite.setInnerHTML(content);
         //w.add(new MaterialLabel("TEST"));
 
         logger.debug("process  processTemplateMaterialTags = " + composite.getInnerHTML() + " " + composite.getTagName() + " " + wrapper.getClass());
 
-        getNodeChildren(composite).forEach(c -> {
+        getNodeChildren(div.getElement()).forEach(c -> {
             process(wrapper, (Element) c);
         });
 
