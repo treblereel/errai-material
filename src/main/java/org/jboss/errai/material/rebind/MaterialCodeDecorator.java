@@ -85,7 +85,6 @@ public class MaterialCodeDecorator extends IOCDecoratorExtension<Templated> {
                 TemplatedCodeDecorator.getTemplateFileName(declaringClass),
                 TemplatedCodeDecorator.getTemplateFragmentName(declaringClass), loadVariable("templateFieldsMap")));
 
-        controller.getFactoryInitializaionStatements().add(Stmt.invokeStatic(GwtMaterialInitializer.class, "get").invoke("check"));
         controller.addInitializationStatementsToEnd(stmts);
     }
 

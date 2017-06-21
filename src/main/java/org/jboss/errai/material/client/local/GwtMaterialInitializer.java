@@ -52,6 +52,7 @@ public class GwtMaterialInitializer extends MaterialDesignDebugBase {
     }
 
     public void check() {
+        logger.warn("GwtMaterialInitializer check");
         if (!loaded) {
             load();
             loaded = true;
