@@ -54,11 +54,15 @@ import com.google.gwt.dom.client.Node;
 import com.google.gwt.regexp.shared.MatchResult;
 import com.google.gwt.regexp.shared.RegExp;
 import com.google.gwt.user.client.DOM;
+import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Widget;
 import gwt.material.design.client.ui.MaterialListBox;
 import gwt.material.design.client.ui.MaterialNavBar;
 import gwt.material.design.client.ui.MaterialTab;
 import gwt.material.design.client.ui.html.UnorderedList;
+import org.jboss.errai.codegen.Statement;
+import org.jboss.errai.codegen.util.Bool;
+import org.jboss.errai.codegen.util.Stmt;
 import org.jboss.errai.ioc.client.container.IOC;
 import org.jboss.errai.ui.shared.Visit;
 import org.jboss.errai.ui.shared.VisitContext;
@@ -207,6 +211,10 @@ public class GwtMaterialUtil {
         return html;
     }
 
+    public static void test(Object instance){
+        logger.warn(" test " + instance.getClass().getSimpleName());
+    }
+
     public static String getTag(Element elm) {
         return elm.getTagName().toLowerCase().replaceAll("-", "");
     }
@@ -215,6 +223,10 @@ public class GwtMaterialUtil {
         String tag = obj.getClass().getSimpleName();
         java.util.Optional<MaterialWidgetDefinition> materialWidgetDefinition = helper.getMaterialWidgetDefinition(tag);
         copyWidgetAttrsAndSetProperties(e, obj, materialWidgetDefinition);
+    }
+
+    public static void warn(String s){
+        logger.warn(s);
     }
 
     public static void copyWidgetAttrsAndSetProperties(Element e, Widget obj, Optional<MaterialWidgetDefinition> materialWidgetDefinition) {

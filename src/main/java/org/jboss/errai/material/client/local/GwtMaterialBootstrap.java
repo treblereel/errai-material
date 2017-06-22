@@ -32,29 +32,38 @@
 
 package org.jboss.errai.material.client.local;
 
+import com.google.gwt.core.client.GWT;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Node;
+import com.google.gwt.resources.client.ClientBundle;
+import com.google.gwt.resources.client.TextResource;
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.Widget;
 import gwt.material.design.client.base.MaterialWidget;
 import gwt.material.design.client.constants.Position;
+import gwt.material.design.client.ui.MaterialLabel;
 import gwt.material.design.client.ui.MaterialListBox;
 import gwt.material.design.client.ui.MaterialNavBar;
+import gwt.material.design.client.ui.MaterialRow;
 import gwt.material.design.client.ui.MaterialTab;
 import gwt.material.design.client.ui.MaterialTooltip;
 import gwt.material.design.client.ui.html.Div;
 import gwt.material.design.jquery.client.api.JQuery;
 import org.jboss.errai.ioc.client.container.IOC;
 import org.jboss.errai.material.client.local.factory.MaterialWidgetQualifier;
+import org.jboss.errai.ui.shared.Template;
+import org.jboss.errai.ui.shared.TemplateUtil;
 import org.jboss.errai.ui.shared.VisitContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.Optional;
 
 
@@ -125,6 +134,7 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
     }
 
     private void processTemplateMaterialTags() {
+
         if (hasСhildren(composite))
             composite.removeAllChildren();
 
@@ -146,12 +156,23 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
         //composite.setInnerHTML(content);
         //w.add(new MaterialLabel("TEST"));
 
-        logger.debug("process  processTemplateMaterialTags = " + composite.getInnerHTML() + " " + composite.getTagName() + " " + wrapper.getClass());
+        logger.warn("process  processTemplateMaterialTags = " + composite.getInnerHTML() + " " + composite.getTagName() + " " + wrapper.getClass());
 
         getNodeChildren(div.getElement()).forEach(c -> {
             process(wrapper, (Element) c);
         });
 
+
+    }
+
+    public static void initTemplated(final Object templated, final Element wrapped) {
+        Map<String, Widget> dataFields = new HashMap<>();
+        dataFields.put("a", new MaterialTab());
+        dataFields.put("b", new MaterialRow());
+        dataFields.put("c", new MaterialLabel());
+
+
+        TemplateUtil.initTemplated(templated, wrapped, dataFields.values());
 
     }
 
