@@ -76,6 +76,7 @@ public class MaterialCodeDecorator extends IOCDecoratorExtension<Templated> {
     private List<Statement> stmts;
     final Class<Templated> decoratesWith;
     final ErraiUITemplateDecoratorFacade facade;
+    final static String FINAL_HTML_CONTENT = "finalHtmlContent";
 
     private static final Logger logger = LoggerFactory.getLogger(MaterialCodeDecorator.class);
 
@@ -127,8 +128,17 @@ public class MaterialCodeDecorator extends IOCDecoratorExtension<Templated> {
             controller.addInitializationStatements(preInitializationStatements);
         }
 
+        final String parentOfRootTemplateElementVarName = "parentElementForTemplateOf" + decorable.getDecorableDeclaringType().getName();
+        final Statement rootTemplateElement = Stmt.invokeStatic(TemplateUtil.class, "getRootTemplateElement",
+                Stmt.loadVariable(parentOfRootTemplateElementVarName));
+        final String templateVarName = "templateFor" + decorable.getDecorableDeclaringType().getName();
 
         postInitializationStatements.add(StringStatement.of("}"));
+/*        postInitializationStatements.add(invokeStatic(GwtMaterialBootstrap.class, "processTemplate", rootTemplateElement,
+                Stmt.loadVariable(templateVarName).invoke("getContents").invoke("getText"),
+                TemplatedCodeDecorator.getTemplateFileName(declaringClass),
+                TemplatedCodeDecorator.getTemplateFragmentName(declaringClass), loadVariable("templateFieldsMap")));*/
+
 
         controller.addInitializationStatementsToEnd(postInitializationStatements);
         controller.addDestructionStatements(facade.generateTemplateDestruction(decorable));
@@ -201,6 +211,11 @@ public class MaterialCodeDecorator extends IOCDecoratorExtension<Templated> {
                                                  final List<Statement> initStmts,
                                                  final boolean customProvider) {
 
+        final String parentOfRootTemplateElementVarName = "parentElementForTemplateOf" + decorable.getDecorableDeclaringType().getName();
+
+        final Statement rootTemplateElement = Stmt.invokeStatic(TemplateUtil.class, "getRootTemplateElement",
+                Stmt.loadVariable(parentOfRootTemplateElementVarName));
+
         initStmts.add(Stmt.codeComment("<---- my code --->)"));
 
         final Map<MetaClass, BuildMetaClass> constructed = facade.getConstructedTemplateTypes(decorable);
@@ -225,6 +240,17 @@ public class MaterialCodeDecorator extends IOCDecoratorExtension<Templated> {
                         .initializeWith(invokeStatic(GWT.class, "create", constructed.get(declaringClass))));
 
                 initStmts.add(invokeStatic(GwtMaterialUtil.class,"warn",Stmt.loadVariable(templateVarName).invoke("getContents").invoke("getText")));
+
+
+                initStmts.add(Stmt.declareVariable(String.class).named(FINAL_HTML_CONTENT).
+                        initializeWith(Stmt.invokeStatic(GwtMaterialUtil.class,"closeVoidTags",Stmt.loadVariable(templateVarName).
+                                invoke("getContents").invoke("getText"))));
+
+/*                initStmts.add(Stmt.declareVariable(Element.class).named(ROOT_ELEMENT).
+                        initializeWith(rootTemplateElement));*/
+
+
+
 
 
                 if (generateCssBundle) {
@@ -253,19 +279,15 @@ public class MaterialCodeDecorator extends IOCDecoratorExtension<Templated> {
       /*
        * Get root Template Element
        */
-            final String parentOfRootTemplateElementVarName = "parentElementForTemplateOf" + decorable.getDecorableDeclaringType().getName();
             initStmts.add(Stmt
                     .declareVariable(Element.class)
                     .named(parentOfRootTemplateElementVarName)
                     .initializeWith(
                             Stmt.invokeStatic(TemplateUtil.class, "getRootTemplateParentElement",
                                     (customProvider) ? Variable.get("template") :
-                                            Stmt.loadVariable(templateVarName).invoke("getContents").invoke("getText"),
+                                            Stmt.loadVariable(FINAL_HTML_CONTENT),
                                     TemplatedCodeDecorator.getTemplateFileName(declaringClass),
                                     TemplatedCodeDecorator.getTemplateFragmentName(declaringClass))));
-
-            final Statement rootTemplateElement = Stmt.invokeStatic(TemplateUtil.class, "getRootTemplateElement",
-                    Stmt.loadVariable(parentOfRootTemplateElementVarName));
 
       /*
        * If i18n is enabled for this module, translate the root template element here

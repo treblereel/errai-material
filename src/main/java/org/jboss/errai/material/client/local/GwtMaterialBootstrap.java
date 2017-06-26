@@ -101,8 +101,8 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
     }
 
     private void processTemplate() {
-        processTemplateMaterialSelfClosedTags();
-        processTemplateMaterialTags();
+        //processTemplateMaterialSelfClosedTags();
+        //processTemplateMaterialTags();
     }
 
     private void processTemplateMaterialSelfClosedTags() { //TODO first replace, then attach
@@ -134,8 +134,25 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
     }
 
     private void processTemplateMaterialTags() {
+        logger.warn("process  processTemplateMaterialTags = " + composite.getInnerHTML());
 
-        if (hasСhildren(composite))
+        if(dataFieldElements.containsKey("row")){
+
+            MaterialTab tab= (MaterialTab)dataFieldElements.get("id_4");
+            MaterialRow row= (MaterialRow)dataFieldElements.get("id_5");
+
+            composite.appendChild(tab.getElement());
+            composite.appendChild(row.getElement());
+
+          //  wrapper.add(tab);
+          //  wrapper.add(row);
+
+        }
+
+
+
+
+/*        if (hasСhildren(composite))
             composite.removeAllChildren();
 
         String content = "";
@@ -160,19 +177,8 @@ public class GwtMaterialBootstrap { //TODO is template is null, add hasDataField
 
         getNodeChildren(div.getElement()).forEach(c -> {
             process(wrapper, (Element) c);
-        });
+        });*/
 
-
-    }
-
-    public static void initTemplated(final Object templated, final Element wrapped) {
-        Map<String, Widget> dataFields = new HashMap<>();
-        dataFields.put("a", new MaterialTab());
-        dataFields.put("b", new MaterialRow());
-        dataFields.put("c", new MaterialLabel());
-
-
-        TemplateUtil.initTemplated(templated, wrapped, dataFields.values());
 
     }
 

@@ -54,15 +54,21 @@ import com.google.gwt.dom.client.Node;
 import com.google.gwt.regexp.shared.MatchResult;
 import com.google.gwt.regexp.shared.RegExp;
 import com.google.gwt.user.client.DOM;
-import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Widget;
+import gwt.material.design.client.base.MaterialWidget;
+import gwt.material.design.client.constants.Color;
+import gwt.material.design.client.constants.WavesType;
+import gwt.material.design.client.ui.MaterialButton;
+import gwt.material.design.client.ui.MaterialColumn;
+import gwt.material.design.client.ui.MaterialLabel;
+import gwt.material.design.client.ui.MaterialLink;
 import gwt.material.design.client.ui.MaterialListBox;
 import gwt.material.design.client.ui.MaterialNavBar;
+import gwt.material.design.client.ui.MaterialRow;
 import gwt.material.design.client.ui.MaterialTab;
+import gwt.material.design.client.ui.MaterialTabItem;
+import gwt.material.design.client.ui.MaterialTitle;
 import gwt.material.design.client.ui.html.UnorderedList;
-import org.jboss.errai.codegen.Statement;
-import org.jboss.errai.codegen.util.Bool;
-import org.jboss.errai.codegen.util.Stmt;
 import org.jboss.errai.ioc.client.container.IOC;
 import org.jboss.errai.ui.shared.Visit;
 import org.jboss.errai.ui.shared.VisitContext;
@@ -73,6 +79,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -141,6 +148,19 @@ public class GwtMaterialUtil {
 
     }
 
+    public static class Parent {
+
+        private Optional<Widget> parent;
+
+        public Parent(Optional<Widget> parent) {
+            this.parent = parent;
+        }
+
+        public Optional<Widget> getParent() {
+            return parent;
+        }
+    }
+
     public static VisitContext<TaggedElement> getElementByDataField(Element parserDiv, String lookup) {
         logger.debug("getElementByDataField [" + lookup + "] ");
         return Visit.depthFirst(parserDiv, new Visitor<TaggedElement>() {
@@ -179,20 +199,58 @@ public class GwtMaterialUtil {
             return null;
     }
 
-    private static boolean hasСhildren(Element elm) {
+    public static boolean hasСhildren(Element elm) {
         if (elm != null && elm.getChildCount() != 0) {
             return true;
         }
         return false;
     }
 
-    private static boolean hasDataField(Element elm) {
+    public static List<Node> getNodeChildren(Node node) {
+        List<Node> result = new LinkedList<>();
+        for (int i = 0; i < node.getChildNodes().getLength(); i++) {
+            Node child = node.getChildNodes().getItem(i);
+            if (child.getNodeType() == Node.ELEMENT_NODE || child.getNodeType() == Node.TEXT_NODE) {
+                result.add(child);
+            }
+        }
+        return result;
+    }
+
+    public static boolean hasDataField(Element elm) {
         return elm.hasAttribute(DATA_FIELD);
     }
 
-    private static boolean isMaterialWidget(Element element) {
+    public static boolean isMaterialWidget(Element element) {
         if (element.getTagName().toLowerCase().startsWith("material")) {
             return true;
+        }
+        return false;
+    }
+
+    public static String getDataFieldValue(Element elm) {
+        return elm.getAttribute(DATA_FIELD);
+    }
+
+    public static Widget getDataFieldedWidget(Element element, Map<String, Widget> dataFieldElements) {
+        return dataFieldElements.get(getDataFieldValue(element));
+    }
+
+    public Boolean isMaterialWidget(String tag) {
+        if (helper.isWidgetSupported(tag)) {
+            return true;
+        }
+        return false;
+    }
+
+    public boolean isMaterialWidget(Element element, Map<String, Widget> dataFieldElements) {
+        if (isMaterialWidget(element.getTagName())) {
+            return true;
+        } else if (!GwtMaterialUtil.getAttributesByName(element, "data-field").equals("")) {
+            String id = GwtMaterialUtil.getAttributesByName(element, "data-field");
+            if (dataFieldElements.containsKey(id) && dataFieldElements.get(id).getClass().getSimpleName().toLowerCase().startsWith("material")) {
+                return true;
+            }
         }
         return false;
     }
@@ -211,7 +269,7 @@ public class GwtMaterialUtil {
         return html;
     }
 
-    public static void test(Object instance){
+    public static void test(Object instance) {
         logger.warn(" test " + instance.getClass().getSimpleName());
     }
 
@@ -225,8 +283,123 @@ public class GwtMaterialUtil {
         copyWidgetAttrsAndSetProperties(e, obj, materialWidgetDefinition);
     }
 
-    public static void warn(String s){
+    public static void beforeTemplateInitInvoke(Element root, String content, Map<String, Widget> templateFieldsMap) {
+        logger.warn("beforeTemplateInitInvoke " + root.getInnerHTML());
+        logger.warn("beforeTemplateInitInvoke html " + content);
+
+        if (hasСhildren(root)) {
+            new GwtMaterialPreInit(root, content, templateFieldsMap);
+        }
+    }
+
+    private static class Context {
+        private Element parent;
+
+        public Context(Element parent) {
+            this.parent = parent;
+        }
+
+    }
+
+    public static void addWidgetToParent(Widget parent, Widget child) {
+        if (parent.getClass().equals(MaterialListBox.class)) {
+            GwtMaterialUtil.addOptionToListBox((MaterialListBox) parent, (gwt.material.design.client.ui.html.Option) child);
+        } else if (parent.getClass().equals(MaterialTab.class)) {
+            GwtMaterialUtil.addWidgetItemToUnorderedList((MaterialTab) parent, child);
+        } else if (parent.getClass().equals(MaterialNavBar.class)) {
+            GwtMaterialUtil.addWidgetToMaterialNavBar(parent, child);
+        } else {
+            ((MaterialWidget) parent).add(child);
+        }
+    }
+
+
+    public static void afterTemplateInitInvoke(Element root, String content, Map<String, Widget> templateFieldsMap) {
+        logger.warn("afterTemplateInitInvoke " + root.getInnerHTML());
+
+        new GwtMaterialPostInit(root, content, templateFieldsMap);
+    }
+
+    public static void warn(String s) {
         logger.warn(s);
+    }
+
+
+    public static void addMeterialDataFieldsToMap(Map<String, Widget> map) {
+        map.put("id_1", new MaterialLabel("OLOLO"));
+        map.put("id_2", new MaterialButton("OLOLO____"));
+        map.put("id_3", new MaterialTitle("OLOLOZZZZZZ"));
+
+
+        MaterialTab tab = new MaterialTab();
+
+
+        MaterialTabItem t1 = new MaterialTabItem();
+        t1.setWaves(WavesType.ORANGE);
+        MaterialLink l1 = new MaterialLink();
+        l1.setText("Tab 1");
+        l1.setHref("#tab1");
+        l1.setTextColor(Color.AMBER);
+        t1.add(l1);
+        tab.add(t1);
+
+        MaterialTabItem t2 = new MaterialTabItem();
+        t2.setWaves(WavesType.ORANGE);
+        MaterialLink l2 = new MaterialLink();
+        l2.setText("Tab 2");
+        l2.setHref("#tab2");
+        l2.setTextColor(Color.AMBER);
+        t2.add(l2);
+        tab.add(t2);
+
+        MaterialTabItem t3 = new MaterialTabItem();
+        t3.setWaves(WavesType.ORANGE);
+        MaterialLink l3 = new MaterialLink();
+        l3.setText("Tab 3");
+        l3.setHref("#tab3");
+        l3.setTextColor(Color.AMBER);
+        t3.add(l3);
+        tab.add(t3);
+
+        MaterialTabItem t4 = new MaterialTabItem();
+        t4.setWaves(WavesType.ORANGE);
+        MaterialLink l4 = new MaterialLink();
+        l4.setText("Tab 4");
+        l4.setHref("#tab4");
+        l4.setTextColor(Color.AMBER);
+        t4.add(l4);
+        tab.add(t4);
+
+
+        MaterialRow row = new MaterialRow();
+
+        MaterialColumn c1 = new MaterialColumn();
+        c1.setId("tab1");
+        c1.setGrid("s12");
+        c1.add(new MaterialLabel("C1"));
+        row.add(c1);
+
+
+        MaterialColumn c2 = new MaterialColumn();
+        c2.setId("tab2");
+        c2.setGrid("s12");
+        c2.add(new MaterialLabel("C2"));
+        row.add(c2);
+
+        MaterialColumn c3 = new MaterialColumn();
+        c3.setId("tab3");
+        c3.setGrid("s12");
+        c3.add(new MaterialLabel("C3"));
+        row.add(c3);
+
+        MaterialColumn c4 = new MaterialColumn();
+        c4.setId("tab4");
+        c4.setGrid("s12");
+        c4.add(new MaterialLabel("C4"));
+
+
+        map.put("id_4", tab);
+        map.put("id_5", row);
     }
 
     public static void copyWidgetAttrsAndSetProperties(Element e, Widget obj, Optional<MaterialWidgetDefinition> materialWidgetDefinition) {
@@ -315,13 +488,16 @@ public class GwtMaterialUtil {
         }
     }
 
-
     public static native JsArray<Node> getAttributes(Element elem) /*-{
         return elem.attributes;
     }-*/;
 
     public static native void attach(Widget x) /*-{
         x.@com.google.gwt.user.client.ui.Widget::onAttach()();
+    }-*/;
+
+    public static native void add(Widget parent, Widget child) /*-{
+        parent.@gwt.material.design.client.base.MaterialWidget::add(Lcom/google/gwt/user/client/ui/Widget;)(child);
     }-*/;
 
     public static native void addOptionToListBox(MaterialListBox x, gwt.material.design.client.ui.html.Option s) /*-{

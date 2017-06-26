@@ -16,6 +16,7 @@
 
 package org.jboss.errai.material.rebind;
 
+import com.google.gwt.dom.client.Element;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.Widget;
 import org.jboss.errai.codegen.Cast;
@@ -25,6 +26,8 @@ import org.jboss.errai.codegen.meta.impl.build.BuildMetaClass;
 import org.jboss.errai.codegen.util.Stmt;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.Decorable;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.FactoryController;
+import org.jboss.errai.material.client.local.GwtMaterialPreInit;
+import org.jboss.errai.material.client.local.GwtMaterialUtil;
 import org.jboss.errai.ui.rebind.DataFieldCodeDecorator;
 import org.jboss.errai.ui.rebind.TemplatedCodeDecorator;
 import org.jboss.errai.ui.shared.TemplateUtil;
@@ -37,7 +40,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
+import static org.jboss.errai.codegen.builder.impl.ObjectBuilder.newInstanceOf;
+import static org.jboss.errai.codegen.meta.MetaClassFactory.parameterizedAs;
+import static org.jboss.errai.codegen.meta.MetaClassFactory.typeParametersOf;
 import static org.jboss.errai.codegen.util.Stmt.invokeStatic;
 
 /**
@@ -47,6 +54,8 @@ import static org.jboss.errai.codegen.util.Stmt.invokeStatic;
 public class ErraiUITemplateDecoratorFacade {
     private final Class<Templated> decoratesWith;
     private final TemplatedCodeDecorator templatedCodeDecorator;
+    final static String ROOT_ELEMENT = "rootElement";
+
 
     ErraiUITemplateDecoratorFacade(Class<Templated> decoratesWith) {
         this.decoratesWith = decoratesWith;
@@ -82,6 +91,15 @@ public class ErraiUITemplateDecoratorFacade {
         }
         return result;
 
+    }
+
+    Statement supplierOf(final Statement value) {
+        return newInstanceOf(parameterizedAs(Supplier.class, typeParametersOf(value.getType())))
+                .extend()
+                .publicOverridesMethod("get")
+                .append(Stmt.nestedCall(value).returnValue())
+                .finish()
+                .finish();
     }
 
     Optional<String> getResolvedStyleSheetPath(final Optional<String> declaredStylesheetPath,
@@ -137,23 +155,7 @@ public class ErraiUITemplateDecoratorFacade {
         return result;
     }
 
-/*    void generateComponentCompositions(final Decorable decorable,
-                                       final List<Statement> initStmts,
-                                       final Statement component,
-                                       final Statement rootTemplateElement,
-                                       final Statement dataFieldElements,
-                                       final Statement fieldsMap,
-                                       final Statement fieldsMetaMap) {
-        try {
-            Method m = TemplatedCodeDecorator.class.getDeclaredMethod("generateComponentCompositions", Decorable.class, List.class, Statement.class, Statement.class, Statement.class, Statement.class, Statement.class);
-            m.setAccessible(true);
-            m.invoke(templatedCodeDecorator, decorable, initStmts, component, rootTemplateElement, dataFieldElements, fieldsMap, fieldsMetaMap);
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
-    }*/
-
-    private void generateComponentCompositions(final Decorable decorable,
+    void generateComponentCompositions(final Decorable decorable,
                                                final List<Statement> initStmts,
                                                final Statement component,
                                                final Statement rootTemplateElement,
@@ -163,6 +165,7 @@ public class ErraiUITemplateDecoratorFacade {
 
         final boolean composite = decorable.getEnclosingInjectable().getInjectedType().isAssignableTo(Composite.class);
 
+
     /*
      * Merge each field's Widget Element into the DOM in place of the
      * corresponding data-field
@@ -170,7 +173,7 @@ public class ErraiUITemplateDecoratorFacade {
         final Map<String, Statement> dataFields = DataFieldCodeDecorator.aggregateDataFieldMap(decorable, decorable.getEnclosingInjectable().getInjectedType());
         for (final Map.Entry<String, Statement> field : dataFields.entrySet()) {
             initStmts.add(invokeStatic(TemplateUtil.class, "compositeComponentReplace", decorable.getDecorableDeclaringType()
-                            .getFullyQualifiedName(), getTemplateFileName(decorable.getDecorableDeclaringType()), supplierOf(Cast.to(Widget.class, field.getValue())),
+                            .getFullyQualifiedName(), TemplatedCodeDecorator.getTemplateFileName(decorable.getDecorableDeclaringType()), supplierOf(Cast.to(Widget.class, field.getValue())),
                     dataFieldElements, fieldsMetaMap, field.getKey()));
         }
 
@@ -181,6 +184,11 @@ public class ErraiUITemplateDecoratorFacade {
         for (final Map.Entry<String, Statement> field : dataFields.entrySet()) {
             initStmts.add(Stmt.nestedCall(fieldsMap).invoke("put", field.getKey(), field.getValue()));
         }
+                initStmts.add(Stmt.declareVariable(Element.class).named(ROOT_ELEMENT).
+                        initializeWith(rootTemplateElement));
+        initStmts.add(invokeStatic(GwtMaterialUtil.class,"beforeTemplateInitInvoke", Stmt.loadVariable(ROOT_ELEMENT), Stmt.loadVariable(MaterialCodeDecorator.FINAL_HTML_CONTENT), fieldsMap));
+
+
 
         final String initMethodName;
         if (composite) {
@@ -192,8 +200,13 @@ public class ErraiUITemplateDecoratorFacade {
         } else {
             initMethodName = "initTemplated";
         }
-        initStmts.add(Stmt.invokeStatic(TemplateUtil.class, initMethodName, component, rootTemplateElement,
+
+        final String parentOfRootTemplateElementVarName = "parentElementForTemplateOf" + decorable.getDecorableDeclaringType().getName();
+
+
+        initStmts.add(Stmt.invokeStatic(TemplateUtil.class, initMethodName, component, Stmt.loadVariable(ROOT_ELEMENT),
                 Stmt.nestedCall(fieldsMap).invoke("values")));
+        initStmts.add(invokeStatic(GwtMaterialUtil.class,"afterTemplateInitInvoke", Stmt.loadVariable(ROOT_ELEMENT), Stmt.loadVariable(MaterialCodeDecorator.FINAL_HTML_CONTENT), fieldsMap));
 
     }
 
