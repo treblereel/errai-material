@@ -49,7 +49,13 @@ public class GwtMaterialPostInit {
 
         if (element.getNodeType() == 1 && element.hasAttribute(GwtMaterialPreInit.MATERIAL_ID)) {
             String id = element.getAttribute(GwtMaterialPreInit.MATERIAL_ID);
+            element.getParentElement().replaceChild(templateFieldsMap.get(id).getElement(), element); //TODO MAyBE we also need to process childs
+        }else if(element.getNodeType() == 1 && GwtMaterialUtil.isMaterialWidget(element) && GwtMaterialUtil.hasDataField(element)){
+            String id = GwtMaterialUtil.getDataFieldValue(element);
             element.getParentElement().replaceChild(templateFieldsMap.get(id).getElement(), element);
+            if(GwtMaterialUtil.hasСhildren(templateFieldsMap.get(id).getElement())) {
+                GwtMaterialUtil.getNodeChildren(templateFieldsMap.get(id).getElement()).forEach(child -> process((Element) child));
+            }
         }else{
             if(GwtMaterialUtil.hasСhildren(element)) {
                 GwtMaterialUtil.getNodeChildren(element).forEach(child -> process((Element) child));

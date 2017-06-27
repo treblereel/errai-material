@@ -20,6 +20,7 @@ import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Node;
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.ui.Widget;
+import gwt.material.design.client.ui.MaterialLabel;
 import org.jboss.errai.ioc.client.container.IOC;
 import org.jboss.errai.ui.shared.Visit;
 import org.jboss.errai.ui.shared.VisitContext;
@@ -59,30 +60,47 @@ public class GwtMaterialPreInit {
         this.templateFieldsMap = templateFieldsMap;
         original = DOM.createDiv();
         original.setInnerHTML(content);
-        logger.warn(" original html " + original.getInnerHTML());
+        logger.warn(" root html " + root.getInnerHTML());
 
         process(null, root, false);
+
+
+        logger.warn(" we done" + root.getInnerHTML());
+
 
     }
 
     private void process(Widget parent, Element root, boolean parentDataFielded) {
+        if (root.getNodeType() == Node.ELEMENT_NODE) {
+
+            logger.warn("process  " + ((Element) root).getTagName() + "  " + " " + root.getId());
+        }
+
         if (hasСhildren(root)) {
             getNodeChildren(root).forEach(child -> {
-                logger.warn("inProcess  " + ((Element) child).getTagName() + "  " + " " + child.getNodeType());
                 if (child.getNodeType() == Node.ELEMENT_NODE) {
                     if (helper.isWidgetSupported(((Element) child).getTagName())) {
                         if (hasDataField((Element) child)) {
                             Widget childAsWidget = getDataFieldedWidget((Element) child, templateFieldsMap);
                             copyWidgetAttrsAndSetProperties((Element) child, childAsWidget);
 
+                         //   logger.warn(" .. child before replace  " + childAsWidget.getElement().getInnerHTML());
+                         //   logger.warn(" .. looking for  " + getDataFieldValue((Element) child) + " in " + original.getInnerHTML());
+
                             VisitContext<GwtMaterialUtil.TaggedElement> context = getElementByDataField(original, getDataFieldValue((Element) child));
                             if (context.getResult() != null) {
                                 if (context.getResult().getElement() != null) {
                                     Element originDataFielded = context.getResult().getElement();
+                                    childAsWidget.getElement().setInnerHTML(originDataFielded.getInnerHTML());
                                     ((Element) child).setInnerHTML(originDataFielded.getInnerHTML());
                                 }
                             }
-                            process(childAsWidget, (Element) child, true);
+                            if(parent !=null){
+                                parent.getElement().appendChild(child);
+
+                            }
+
+                            process(childAsWidget, childAsWidget.getElement(), true);
                         } else {
                             doMaterialWidget(parent, (Element) child, parentDataFielded);
                         }
@@ -97,7 +115,6 @@ public class GwtMaterialPreInit {
     }
 
     public VisitContext<GwtMaterialUtil.TaggedElement> getElementByDataField(Element parserDiv, String lookup) {
-        logger.debug("getElementByDataField [" + lookup + "]" + " " + parserDiv.getInnerHTML());
         return Visit.depthFirst(parserDiv, new Visitor<GwtMaterialUtil.TaggedElement>() {
             @Override
             public boolean visit(final VisitContextMutable<GwtMaterialUtil.TaggedElement> context, final Element element) {
@@ -116,26 +133,13 @@ public class GwtMaterialPreInit {
     }
 
     private void doMaterialWidget(Widget parent, Element element, boolean parentDateFielded) {
-
-        if (parent != null) {
-
-            logger.warn("parent  " + parent.getClass().getSimpleName());
-            logger.warn("looking for  " + element.getTagName());
-        }
-
         Optional<Tuple<Widget, Boolean>> maybeExist = helper.invoke(element);
         if (maybeExist.isPresent()) {
             if (maybeExist.get().getValue()) {
                 Widget candidate = maybeExist.get().getKey();
-
-                logger.warn(".. find  " + candidate.getClass().getSimpleName());
-
                 copyWidgetAttrsAndSetProperties(element, candidate);
-
                 if (parent != null) {
                     element.getParentElement().removeChild(element);
-                    //parent.getElement().removeChild(element);
-
                     GwtMaterialUtil.addWidgetToParent(parent, candidate);
                 } else {
                     String id = DOM.createUniqueId();
@@ -146,10 +150,8 @@ public class GwtMaterialPreInit {
             } else {
 
             }
-
-
         } else {
-            throw new RuntimeException("widget doent't exist " + element.getTagName());
+            throw new RuntimeException("widget doesn't exist " + element.getTagName());
         }
 
     }

@@ -91,9 +91,7 @@ import java.util.Optional;
  */
 public class GwtMaterialUtil {
     private static final MaterialWidgetFactoryHelper helper = IOC.getBeanManager().lookupBean(MaterialWidgetFactoryHelper.class).getInstance();
-    //private static  MaterialWidgetFactoryHelper helper ;
     private static final String HTML_VOID_TAG_PATTERN = "<([m,M]aterial-\\w*|div)(\"[^\"]*\"|[^'\">])*/>";
-    //private static final String HTML_VOID_TAG_PATTERN = "<(\\w*)(\"[^\"]*\"|[^'\">])*/>";
     private static final String DATA_FIELD = "data-field";
     private static final String[] tag_attr_white_list = {"href", "style"};
 
@@ -146,19 +144,6 @@ public class GwtMaterialUtil {
             return element;
         }
 
-    }
-
-    public static class Parent {
-
-        private Optional<Widget> parent;
-
-        public Parent(Optional<Widget> parent) {
-            this.parent = parent;
-        }
-
-        public Optional<Widget> getParent() {
-            return parent;
-        }
     }
 
     public static VisitContext<TaggedElement> getElementByDataField(Element parserDiv, String lookup) {
@@ -283,15 +268,6 @@ public class GwtMaterialUtil {
         copyWidgetAttrsAndSetProperties(e, obj, materialWidgetDefinition);
     }
 
-    public static void beforeTemplateInitInvoke(Element root, String content, Map<String, Widget> templateFieldsMap) {
-        logger.warn("beforeTemplateInitInvoke " + root.getInnerHTML());
-        logger.warn("beforeTemplateInitInvoke html " + content);
-
-        if (hasСhildren(root)) {
-            new GwtMaterialPreInit(root, content, templateFieldsMap);
-        }
-    }
-
     private static class Context {
         private Element parent;
 
@@ -309,14 +285,25 @@ public class GwtMaterialUtil {
         } else if (parent.getClass().equals(MaterialNavBar.class)) {
             GwtMaterialUtil.addWidgetToMaterialNavBar(parent, child);
         } else {
+       //     logger.warn("addWidgetToParent " + child.getElement().getTagName() + " where parent is " + parent.getElement().getTagName());
+
+            ((MaterialWidget) parent).getChildren().forEach(c ->{
+               // logger.warn("  child " + c.getElement().getTagName());
+            });
+
             ((MaterialWidget) parent).add(child);
+
+
+         //   logger.warn("  childs " + parent.getElement().getInnerHTML());
+
+        //        ((MaterialWidget) parent).getChildren().insert(child,0);
+            //((MaterialWidget) parent).add(child);
         }
     }
 
 
     public static void afterTemplateInitInvoke(Element root, String content, Map<String, Widget> templateFieldsMap) {
         logger.warn("afterTemplateInitInvoke " + root.getInnerHTML());
-
         new GwtMaterialPostInit(root, content, templateFieldsMap);
     }
 
@@ -324,82 +311,13 @@ public class GwtMaterialUtil {
         logger.warn(s);
     }
 
+    public static void beforeTemplateInitInvoke(Element root, String content, Map<String, Widget> templateFieldsMap) {
+        logger.warn("beforeTemplateInitInvoke " + root.getInnerHTML());
+        logger.warn("beforeTemplateInitInvoke html " + content);
 
-    public static void addMeterialDataFieldsToMap(Map<String, Widget> map) {
-        map.put("id_1", new MaterialLabel("OLOLO"));
-        map.put("id_2", new MaterialButton("OLOLO____"));
-        map.put("id_3", new MaterialTitle("OLOLOZZZZZZ"));
-
-
-        MaterialTab tab = new MaterialTab();
-
-
-        MaterialTabItem t1 = new MaterialTabItem();
-        t1.setWaves(WavesType.ORANGE);
-        MaterialLink l1 = new MaterialLink();
-        l1.setText("Tab 1");
-        l1.setHref("#tab1");
-        l1.setTextColor(Color.AMBER);
-        t1.add(l1);
-        tab.add(t1);
-
-        MaterialTabItem t2 = new MaterialTabItem();
-        t2.setWaves(WavesType.ORANGE);
-        MaterialLink l2 = new MaterialLink();
-        l2.setText("Tab 2");
-        l2.setHref("#tab2");
-        l2.setTextColor(Color.AMBER);
-        t2.add(l2);
-        tab.add(t2);
-
-        MaterialTabItem t3 = new MaterialTabItem();
-        t3.setWaves(WavesType.ORANGE);
-        MaterialLink l3 = new MaterialLink();
-        l3.setText("Tab 3");
-        l3.setHref("#tab3");
-        l3.setTextColor(Color.AMBER);
-        t3.add(l3);
-        tab.add(t3);
-
-        MaterialTabItem t4 = new MaterialTabItem();
-        t4.setWaves(WavesType.ORANGE);
-        MaterialLink l4 = new MaterialLink();
-        l4.setText("Tab 4");
-        l4.setHref("#tab4");
-        l4.setTextColor(Color.AMBER);
-        t4.add(l4);
-        tab.add(t4);
-
-
-        MaterialRow row = new MaterialRow();
-
-        MaterialColumn c1 = new MaterialColumn();
-        c1.setId("tab1");
-        c1.setGrid("s12");
-        c1.add(new MaterialLabel("C1"));
-        row.add(c1);
-
-
-        MaterialColumn c2 = new MaterialColumn();
-        c2.setId("tab2");
-        c2.setGrid("s12");
-        c2.add(new MaterialLabel("C2"));
-        row.add(c2);
-
-        MaterialColumn c3 = new MaterialColumn();
-        c3.setId("tab3");
-        c3.setGrid("s12");
-        c3.add(new MaterialLabel("C3"));
-        row.add(c3);
-
-        MaterialColumn c4 = new MaterialColumn();
-        c4.setId("tab4");
-        c4.setGrid("s12");
-        c4.add(new MaterialLabel("C4"));
-
-
-        map.put("id_4", tab);
-        map.put("id_5", row);
+        if (hasСhildren(root)) {
+            new GwtMaterialPreInit(root, content, templateFieldsMap);
+        }
     }
 
     public static void copyWidgetAttrsAndSetProperties(Element e, Widget obj, Optional<MaterialWidgetDefinition> materialWidgetDefinition) {

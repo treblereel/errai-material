@@ -26,7 +26,6 @@ import org.jboss.errai.codegen.meta.impl.build.BuildMetaClass;
 import org.jboss.errai.codegen.util.Stmt;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.Decorable;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.FactoryController;
-import org.jboss.errai.material.client.local.GwtMaterialPreInit;
 import org.jboss.errai.material.client.local.GwtMaterialUtil;
 import org.jboss.errai.ui.rebind.DataFieldCodeDecorator;
 import org.jboss.errai.ui.rebind.TemplatedCodeDecorator;
