@@ -17,7 +17,6 @@
 package org.jboss.errai.material.rebind;
 
 import com.sun.codemodel.*;
-import gwt.material.design.client.base.MaterialWidget;
 import org.apache.commons.lang3.ClassUtils;
 import org.jboss.errai.material.client.local.MaterialMethodDefinition;
 

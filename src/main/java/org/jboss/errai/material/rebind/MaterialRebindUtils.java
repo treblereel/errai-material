@@ -17,54 +17,11 @@
 package org.jboss.errai.material.rebind;
 
 import com.google.gwt.thirdparty.guava.common.reflect.ClassPath;
-import com.google.gwt.user.client.Event;
-import com.google.gwt.user.client.ui.Composite;
-import com.google.gwt.user.client.ui.Widget;
 import gwt.material.design.client.base.MaterialWidget;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.reflect.ConstructorUtils;
-import org.jboss.errai.codegen.Cast;
-import org.jboss.errai.codegen.Statement;
-import org.jboss.errai.codegen.meta.MetaClass;
-import org.jboss.errai.codegen.meta.MetaMethod;
-import org.jboss.errai.codegen.meta.impl.build.BuildMetaClass;
-import org.jboss.errai.codegen.util.Refs;
-import org.jboss.errai.codegen.util.Stmt;
-import org.jboss.errai.ioc.rebind.ioc.injector.api.Decorable;
-import org.jboss.errai.ioc.rebind.ioc.injector.api.FactoryController;
-import org.jboss.errai.ui.rebind.DataFieldCodeDecorator;
-import org.jboss.errai.ui.rebind.TemplatedCodeDecorator;
-import org.jboss.errai.ui.shared.DataFieldMeta;
-import org.jboss.errai.ui.shared.Template;
-import org.jboss.errai.ui.shared.TemplateUtil;
-import org.jboss.errai.ui.shared.api.annotations.DataField;
-import org.jboss.errai.ui.shared.api.annotations.EventHandler;
-import org.jboss.errai.ui.shared.api.annotations.Templated;
-
-import javax.enterprise.util.TypeLiteral;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
-import static org.jboss.errai.codegen.builder.impl.ObjectBuilder.newInstanceOf;
-import static org.jboss.errai.codegen.meta.MetaClassFactory.parameterizedAs;
-import static org.jboss.errai.codegen.meta.MetaClassFactory.typeParametersOf;
-import static org.jboss.errai.codegen.util.Stmt.declareFinalVariable;
-import static org.jboss.errai.codegen.util.Stmt.invokeStatic;
-import static org.jboss.errai.codegen.util.Stmt.loadLiteral;
-import static org.jboss.errai.codegen.util.Stmt.loadVariable;
-import static org.jboss.errai.codegen.util.Stmt.newObject;
 
 /**
  * @author Dmitrii Tikhomirov <chani@me.com>

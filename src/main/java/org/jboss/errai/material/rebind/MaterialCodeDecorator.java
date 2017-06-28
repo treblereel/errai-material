@@ -123,77 +123,10 @@ public class MaterialCodeDecorator extends IOCDecoratorExtension<Templated> {
         final String templateVarName = "templateFor" + decorable.getDecorableDeclaringType().getName();
 
         postInitializationStatements.add(StringStatement.of("}"));
-/*        postInitializationStatements.add(invokeStatic(GwtMaterialBootstrap.class, "processTemplate", rootTemplateElement,
-                Stmt.loadVariable(templateVarName).invoke("getContents").invoke("getText"),
-                TemplatedCodeDecorator.getTemplateFileName(declaringClass),
-                TemplatedCodeDecorator.getTemplateFragmentName(declaringClass), loadVariable("templateFieldsMap")));*/
-
 
         controller.addInitializationStatementsToEnd(postInitializationStatements);
         controller.addDestructionStatements(facade.generateTemplateDestruction(decorable));
-
-
-
-
-
-/*        final MetaClass declaringClass = decorable.getDecorableDeclaringType();
-        final String parentOfRootTemplateElementVarName = "parentElementForTemplateOf" + decorable.getDecorableDeclaringType().getName();
-        final String templateVarName = "templateFor" + decorable.getDecorableDeclaringType().getName();
-
-
-        initTemplateParser(declaringClass); // ?
-
-        final Statement component = Refs.get("instance");
-
-
-
-        List<Statement> preInitializationStatements = new ArrayList<>();
-        List<Statement> postInitializationStatements = new ArrayList<>();
-
-        preInitializationStatements.add(Stmt.codeComment("dirty dirty hack"));
-        generateTemplatedInitialization(decorable, controller, preInitializationStatements);
-        preInitializationStatements.add(StringStatement.of(" if(false){  //   "));
-        controller.addInitializationStatements(preInitializationStatements);
-
-
-
-
- *//*       final Statement rootTemplateElement = Stmt.invokeStatic(TemplateUtil.class, "getRootTemplateElement",
-                Stmt.loadVariable(parentOfRootTemplateElementVarName));
-
-        stmts = new ArrayList<>();
-        stmts.add(invokeStatic(GwtMaterialBootstrap.class, "processTemplate", rootTemplateElement,
-                Stmt.loadVariable(templateVarName).invoke("getContents").invoke("getText"),
-                TemplatedCodeDecorator.getTemplateFileName(declaringClass),
-                TemplatedCodeDecorator.getTemplateFragmentName(declaringClass), loadVariable("templateFieldsMap")));*//*
-
-        postInitializationStatements.add(StringStatement.of(" }"));
-
-        controller.addInitializationStatementsToEnd(postInitializationStatements);*/
     }
-
-/*    private void initTemplateParser(MetaClass declaringClass) {
-        Optional<String> template = getPathFromFileName(declaringClass);
-        String filename = TemplatedCodeDecorator.getTemplateFileName(declaringClass);
-        if (!template.isPresent()) {
-            throw new GenerationException(
-                    "Cannot find template ["
-                            + filename + "] in class [" + declaringClass.getFullyQualifiedName()
-                            + "].");
-        }
-        try {
-            File file = new File(template.get());
-            html = Jsoup.parse(file, "UTF-8", "http://localhost/");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }*/
-
-/*    public static Optional<String> getPathFromFileName(MetaClass declaringClass) {
-        String fileName = TemplatedCodeDecorator.getTemplateFileName(declaringClass);
-        return Optional.of(Thread.currentThread().getContextClassLoader().getResource(fileName).getFile());
-    }*/
-
 
     private void generateTemplatedInitialization(final Decorable decorable,
                                                  final FactoryController controller,
@@ -231,13 +164,6 @@ public class MaterialCodeDecorator extends IOCDecoratorExtension<Templated> {
                 initStmts.add(Stmt.declareVariable(String.class).named(FINAL_HTML_CONTENT).
                         initializeWith(Stmt.invokeStatic(GwtMaterialUtil.class,"closeVoidTags",Stmt.loadVariable(templateVarName).
                                 invoke("getContents").invoke("getText"))));
-
-/*                initStmts.add(Stmt.declareVariable(Element.class).named(ROOT_ELEMENT).
-                        initializeWith(rootTemplateElement));*/
-
-
-
-
 
                 if (generateCssBundle) {
                     controller.addFactoryInitializationStatements(singletonList(castTo(constructed.get(declaringClass),

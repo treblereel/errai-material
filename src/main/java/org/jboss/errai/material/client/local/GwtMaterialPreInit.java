@@ -20,7 +20,7 @@ import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Node;
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.ui.Widget;
-import gwt.material.design.client.ui.MaterialLabel;
+import gwt.material.design.client.base.MaterialWidget;
 import org.jboss.errai.ioc.client.container.IOC;
 import org.jboss.errai.ui.shared.Visit;
 import org.jboss.errai.ui.shared.VisitContext;
@@ -32,12 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.jboss.errai.material.client.local.GwtMaterialUtil.copyWidgetAttrsAndSetProperties;
-import static org.jboss.errai.material.client.local.GwtMaterialUtil.getDataFieldValue;
-import static org.jboss.errai.material.client.local.GwtMaterialUtil.getDataFieldedWidget;
-import static org.jboss.errai.material.client.local.GwtMaterialUtil.getNodeChildren;
-import static org.jboss.errai.material.client.local.GwtMaterialUtil.hasDataField;
-import static org.jboss.errai.material.client.local.GwtMaterialUtil.hasСhildren;
+import static org.jboss.errai.material.client.local.GwtMaterialUtil.*;
 
 /**
  * @author Dmitrii Tikhomirov <chani@me.com>
@@ -49,8 +44,6 @@ public class GwtMaterialPreInit {
 
     private final MaterialWidgetFactoryHelper helper = IOC.getBeanManager().lookupBean(MaterialWidgetFactoryHelper.class).getInstance();
 
-    static final String MATERIAL_ID = "material_id";
-
     private Map<String, Widget> templateFieldsMap;
 
     private Element original;
@@ -60,14 +53,7 @@ public class GwtMaterialPreInit {
         this.templateFieldsMap = templateFieldsMap;
         original = DOM.createDiv();
         original.setInnerHTML(content);
-        logger.warn(" root html " + root.getInnerHTML());
-
         process(null, root, false);
-
-
-        logger.warn(" we done" + root.getInnerHTML());
-
-
     }
 
     private void process(Widget parent, Element root, boolean parentDataFielded) {
@@ -96,8 +82,11 @@ public class GwtMaterialPreInit {
                                 }
                             }
                             if(parent !=null){
-                                parent.getElement().appendChild(child);
-
+                                if(parent instanceof MaterialWidget){
+                                    addWidgetToParent(parent, childAsWidget);
+                                }else{
+                                    parent.getElement().appendChild(child);
+                                }
                             }
 
                             process(childAsWidget, childAsWidget.getElement(), true);

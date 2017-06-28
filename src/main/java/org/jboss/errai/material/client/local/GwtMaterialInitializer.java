@@ -32,7 +32,6 @@
 
 package org.jboss.errai.material.client.local;
 
-import gwt.material.design.client.MaterialDesignBase;
 import gwt.material.design.client.MaterialDesignDebugBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -18,13 +18,14 @@ package org.jboss.errai.material.client.local;
 
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.user.client.ui.Widget;
-import org.jboss.errai.ui.shared.Visit;
-import org.jboss.errai.ui.shared.VisitContextMutable;
-import org.jboss.errai.ui.shared.Visitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+
+import static org.jboss.errai.material.client.local.GwtMaterialUtil.getMaterialIdFieldValue;
+import static org.jboss.errai.material.client.local.GwtMaterialUtil.hasMaterialIdField;
+
 
 /**
  * @author Dmitrii Tikhomirov <chani@me.com>
@@ -47,19 +48,15 @@ public class GwtMaterialPostInit {
 
     private void process(Element element) {
 
-        if (element.getNodeType() == 1 && element.hasAttribute(GwtMaterialPreInit.MATERIAL_ID)) {
-            String id = element.getAttribute(GwtMaterialPreInit.MATERIAL_ID);
-            element.getParentElement().replaceChild(templateFieldsMap.get(id).getElement(), element); //TODO MAyBE we also need to process childs
-        }else if(element.getNodeType() == 1 && GwtMaterialUtil.isMaterialWidget(element) && GwtMaterialUtil.hasDataField(element)){
+        if (element.getNodeType() == 1 && hasMaterialIdField(element)) {
+            String id = getMaterialIdFieldValue(element);
+            element.getParentElement().replaceChild(templateFieldsMap.get(id).getElement(), element);
+        } else if (element.getNodeType() == 1 && GwtMaterialUtil.isMaterialWidget(element) && GwtMaterialUtil.hasDataField(element)) {
             String id = GwtMaterialUtil.getDataFieldValue(element);
             element.getParentElement().replaceChild(templateFieldsMap.get(id).getElement(), element);
-            if(GwtMaterialUtil.hasСhildren(templateFieldsMap.get(id).getElement())) {
-                GwtMaterialUtil.getNodeChildren(templateFieldsMap.get(id).getElement()).forEach(child -> process((Element) child));
-            }
-        }else{
-            if(GwtMaterialUtil.hasСhildren(element)) {
-                GwtMaterialUtil.getNodeChildren(element).forEach(child -> process((Element) child));
-            }
+        }
+        if (GwtMaterialUtil.hasСhildren(element)) {
+            GwtMaterialUtil.getNodeChildren(element).forEach(child -> process((Element) child));
         }
     }
 }

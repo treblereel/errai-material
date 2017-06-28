@@ -56,18 +56,10 @@ import com.google.gwt.regexp.shared.RegExp;
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.ui.Widget;
 import gwt.material.design.client.base.MaterialWidget;
-import gwt.material.design.client.constants.Color;
-import gwt.material.design.client.constants.WavesType;
-import gwt.material.design.client.ui.MaterialButton;
-import gwt.material.design.client.ui.MaterialColumn;
-import gwt.material.design.client.ui.MaterialLabel;
-import gwt.material.design.client.ui.MaterialLink;
+import gwt.material.design.client.ui.MaterialDropDown;
 import gwt.material.design.client.ui.MaterialListBox;
 import gwt.material.design.client.ui.MaterialNavBar;
-import gwt.material.design.client.ui.MaterialRow;
 import gwt.material.design.client.ui.MaterialTab;
-import gwt.material.design.client.ui.MaterialTabItem;
-import gwt.material.design.client.ui.MaterialTitle;
 import gwt.material.design.client.ui.html.UnorderedList;
 import org.jboss.errai.ioc.client.container.IOC;
 import org.jboss.errai.ui.shared.Visit;
@@ -92,7 +84,9 @@ import java.util.Optional;
 public class GwtMaterialUtil {
     private static final MaterialWidgetFactoryHelper helper = IOC.getBeanManager().lookupBean(MaterialWidgetFactoryHelper.class).getInstance();
     private static final String HTML_VOID_TAG_PATTERN = "<([m,M]aterial-\\w*|div)(\"[^\"]*\"|[^'\">])*/>";
-    private static final String DATA_FIELD = "data-field";
+    static final String DATA_FIELD = "data-field";
+    static final String MATERIAL_ID = "material_id";
+
     private static final String[] tag_attr_white_list = {"href", "style"};
 
     public static final Logger logger = LoggerFactory.getLogger(GwtMaterialUtil.class);
@@ -202,8 +196,16 @@ public class GwtMaterialUtil {
         return result;
     }
 
+    public static String getTag(Element elm) {
+        return elm.getTagName().toLowerCase().replaceAll("-", "");
+    }
+
     public static boolean hasDataField(Element elm) {
         return elm.hasAttribute(DATA_FIELD);
+    }
+
+    public static boolean hasMaterialIdField(Element elm) {
+        return elm.hasAttribute(MATERIAL_ID);
     }
 
     public static boolean isMaterialWidget(Element element) {
@@ -215,6 +217,10 @@ public class GwtMaterialUtil {
 
     public static String getDataFieldValue(Element elm) {
         return elm.getAttribute(DATA_FIELD);
+    }
+
+    public static String getMaterialIdFieldValue(Element elm) {
+        return elm.getAttribute(MATERIAL_ID);
     }
 
     public static Widget getDataFieldedWidget(Element element, Map<String, Widget> dataFieldElements) {
@@ -254,14 +260,6 @@ public class GwtMaterialUtil {
         return html;
     }
 
-    public static void test(Object instance) {
-        logger.warn(" test " + instance.getClass().getSimpleName());
-    }
-
-    public static String getTag(Element elm) {
-        return elm.getTagName().toLowerCase().replaceAll("-", "");
-    }
-
     public static void copyWidgetAttrsAndSetProperties(Element e, Widget obj) {
         String tag = obj.getClass().getSimpleName();
         java.util.Optional<MaterialWidgetDefinition> materialWidgetDefinition = helper.getMaterialWidgetDefinition(tag);
@@ -280,24 +278,14 @@ public class GwtMaterialUtil {
     public static void addWidgetToParent(Widget parent, Widget child) {
         if (parent.getClass().equals(MaterialListBox.class)) {
             GwtMaterialUtil.addOptionToListBox((MaterialListBox) parent, (gwt.material.design.client.ui.html.Option) child);
+        } else if (parent instanceof MaterialDropDown) {
+            GwtMaterialUtil.addWidgetItemToMaterialDropDown((MaterialDropDown) parent, child);
         } else if (parent.getClass().equals(MaterialTab.class)) {
             GwtMaterialUtil.addWidgetItemToUnorderedList((MaterialTab) parent, child);
         } else if (parent.getClass().equals(MaterialNavBar.class)) {
             GwtMaterialUtil.addWidgetToMaterialNavBar(parent, child);
         } else {
-       //     logger.warn("addWidgetToParent " + child.getElement().getTagName() + " where parent is " + parent.getElement().getTagName());
-
-            ((MaterialWidget) parent).getChildren().forEach(c ->{
-               // logger.warn("  child " + c.getElement().getTagName());
-            });
-
             ((MaterialWidget) parent).add(child);
-
-
-         //   logger.warn("  childs " + parent.getElement().getInnerHTML());
-
-        //        ((MaterialWidget) parent).getChildren().insert(child,0);
-            //((MaterialWidget) parent).add(child);
         }
     }
 
@@ -305,10 +293,6 @@ public class GwtMaterialUtil {
     public static void afterTemplateInitInvoke(Element root, String content, Map<String, Widget> templateFieldsMap) {
         logger.warn("afterTemplateInitInvoke " + root.getInnerHTML());
         new GwtMaterialPostInit(root, content, templateFieldsMap);
-    }
-
-    public static void warn(String s) {
-        logger.warn(s);
     }
 
     public static void beforeTemplateInitInvoke(Element root, String content, Map<String, Widget> templateFieldsMap) {
@@ -432,6 +416,10 @@ public class GwtMaterialUtil {
 
     public static native void addWidgetItemToUnorderedList(UnorderedList x, Widget s) /*-{
         x.@gwt.material.design.client.ui.html.UnorderedList::add(Lcom/google/gwt/user/client/ui/Widget;)(s);
+    }-*/;
+
+    public static native void addWidgetItemToMaterialDropDown(MaterialDropDown x, Widget s) /*-{
+        x.@gwt.material.design.client.ui.MaterialDropDown::add(Lcom/google/gwt/user/client/ui/Widget;)(s);
     }-*/;
 
     public static native void addWidgetToMaterialNavBar(Widget x, Widget s) /*-{
