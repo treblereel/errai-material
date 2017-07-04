@@ -20,19 +20,21 @@ import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Node;
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.ui.Widget;
-import gwt.material.design.client.base.MaterialWidget;
 import org.jboss.errai.ioc.client.container.IOC;
-import org.jboss.errai.ui.shared.Visit;
-import org.jboss.errai.ui.shared.VisitContext;
-import org.jboss.errai.ui.shared.VisitContextMutable;
-import org.jboss.errai.ui.shared.Visitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Optional;
 
-import static org.jboss.errai.material.client.local.GwtMaterialUtil.*;
+import static org.jboss.errai.material.client.local.GwtMaterialUtil.DATA_FIELD;
+import static org.jboss.errai.material.client.local.GwtMaterialUtil.copyWidgetAttrsAndSetProperties;
+import static org.jboss.errai.material.client.local.GwtMaterialUtil.getDataFieldValue;
+import static org.jboss.errai.material.client.local.GwtMaterialUtil.getDataFieldedWidget;
+import static org.jboss.errai.material.client.local.GwtMaterialUtil.getElementByDataField;
+import static org.jboss.errai.material.client.local.GwtMaterialUtil.getNodeChildren;
+import static org.jboss.errai.material.client.local.GwtMaterialUtil.hasDataField;
+import static org.jboss.errai.material.client.local.GwtMaterialUtil.needsToBeInitExplicitly;
 
 /**
  * @author Dmitrii Tikhomirov <chani@me.com>
@@ -48,100 +50,59 @@ public class GwtMaterialPreInit {
 
     private Element original;
 
-
     GwtMaterialPreInit(Element root, String content, Map<String, Widget> templateFieldsMap) {
         this.templateFieldsMap = templateFieldsMap;
         original = DOM.createDiv();
         original.setInnerHTML(content);
-        process(null, root, false);
+        process(null, root);
     }
 
-    private void process(Widget parent, Element root, boolean parentDataFielded) {
+    private void process(Widget parent, Element root) {
         if (root.getNodeType() == Node.ELEMENT_NODE) {
+            if (helper.isWidgetSupported((root).getTagName())) {
+                if (hasDataField(root)) {
+                    Widget childAsWidget = getDataFieldedWidget(root, templateFieldsMap);
+                    copyWidgetAttrsAndSetProperties(root, childAsWidget);
+                    //TODO
+                    //addWidgetToParent(parent, childAsWidget);
 
-            logger.warn("process  " + ((Element) root).getTagName() + "  " + " " + root.getId());
-        }
-
-        if (hasСhildren(root)) {
-            getNodeChildren(root).forEach(child -> {
-                if (child.getNodeType() == Node.ELEMENT_NODE) {
-                    if (helper.isWidgetSupported(((Element) child).getTagName())) {
-                        if (hasDataField((Element) child)) {
-                            Widget childAsWidget = getDataFieldedWidget((Element) child, templateFieldsMap);
-                            copyWidgetAttrsAndSetProperties((Element) child, childAsWidget);
-
-                         //   logger.warn(" .. child before replace  " + childAsWidget.getElement().getInnerHTML());
-                         //   logger.warn(" .. looking for  " + getDataFieldValue((Element) child) + " in " + original.getInnerHTML());
-
-                            VisitContext<GwtMaterialUtil.TaggedElement> context = getElementByDataField(original, getDataFieldValue((Element) child));
-                            if (context.getResult() != null) {
-                                if (context.getResult().getElement() != null) {
-                                    Element originDataFielded = context.getResult().getElement();
-                                    childAsWidget.getElement().setInnerHTML(originDataFielded.getInnerHTML());
-                                    ((Element) child).setInnerHTML(originDataFielded.getInnerHTML());
-                                }
-                            }
-                            if(parent !=null){
-                                if(parent instanceof MaterialWidget){
-                                    addWidgetToParent(parent, childAsWidget);
-                                }else{
-                                    parent.getElement().appendChild(child);
-                                }
-                            }
-
-                            process(childAsWidget, childAsWidget.getElement(), true);
-                        } else {
-                            doMaterialWidget(parent, (Element) child, parentDataFielded);
-                        }
-
-
-                    } else {
-                        process(null, (Element) child, parentDataFielded);
-                    }
-                }
-            });
-        }
-    }
-
-    public VisitContext<GwtMaterialUtil.TaggedElement> getElementByDataField(Element parserDiv, String lookup) {
-        return Visit.depthFirst(parserDiv, new Visitor<GwtMaterialUtil.TaggedElement>() {
-            @Override
-            public boolean visit(final VisitContextMutable<GwtMaterialUtil.TaggedElement> context, final Element element) {
-                if (hasDataField(element) && getDataFieldValue(element).equals(lookup)) {
-                    context.setResult(new GwtMaterialUtil.TaggedElement(GwtMaterialUtil.AttributeType.DATA_FIELD, element));
-                    return false;
-                }
-                return true;
-            }
-        });
-    }
-
-    private void doElement(Element elm) {
-
-
-    }
-
-    private void doMaterialWidget(Widget parent, Element element, boolean parentDateFielded) {
-        Optional<Tuple<Widget, Boolean>> maybeExist = helper.invoke(element);
-        if (maybeExist.isPresent()) {
-            if (maybeExist.get().getValue()) {
-                Widget candidate = maybeExist.get().getKey();
-                copyWidgetAttrsAndSetProperties(element, candidate);
-                if (parent != null) {
-                    element.getParentElement().removeChild(element);
-                    GwtMaterialUtil.addWidgetToParent(parent, candidate);
+                    Element scan = getElementByDataField(original, getDataFieldValue(root)).getResult().getElement();
+                    root.setInnerHTML(scan.getInnerHTML());
+                    parent = childAsWidget; //?
                 } else {
-                    String id = DOM.createUniqueId();
-                    element.setAttribute("material_id", id);
-                    templateFieldsMap.put(id, candidate);
+                    parent = doMaterialWidget(parent, root);
                 }
-                process(candidate, element, parentDateFielded);
-            } else {
-
             }
-        } else {
-            throw new RuntimeException("widget doesn't exist " + element.getTagName());
         }
+
+        for (Node c : getNodeChildren(root)) {
+            process(parent, (Element) c);
+        }
+    }
+
+    private Widget doMaterialWidget(Widget parent, Element element) {
+        Widget candidate = null;
+        logger.warn("doMaterialWidget  " + element.getTagName() + " with parent " + (parent != null ? parent.getClass().getSimpleName() : " null") + " needsToBeInitExplicitly ? " + needsToBeInitExplicitly(element));
+        if (parent == null || needsToBeInitExplicitly(element)) {
+            Optional<Tuple<Widget, Boolean>> maybeExist = helper.invoke(element);
+            if (maybeExist.isPresent()) {
+                if (maybeExist.get().getValue()) {
+
+
+                    logger.warn("add to  templateFieldsMap " + element.getTagName());
+
+                    candidate = maybeExist.get().getKey();
+                    String id = DOM.createUniqueId();
+                    element.setAttribute(DATA_FIELD, id);
+                    templateFieldsMap.put(id, candidate);
+                } else {
+                    throw new RuntimeException("widget doesn't exist " + element.getTagName());
+                }
+            } else {
+                throw new RuntimeException("widget doesn't exist " + element.getTagName());
+            }
+        }
+        return candidate;
 
     }
 }
