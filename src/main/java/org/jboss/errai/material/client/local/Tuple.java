@@ -44,6 +44,9 @@ public class Tuple<K, V> implements Map.Entry<K, V> {
 
     private V value;
 
+    public Tuple(){
+    }
+
     public Tuple(K key, V value){
         this.key = key;
         this.value = value;
@@ -63,6 +66,11 @@ public class Tuple<K, V> implements Map.Entry<K, V> {
     public V setValue(V value) {
         this.value = value;
         return value;
+    }
+
+    public K setKey(K key) {
+        this.key = key;
+        return key;
     }
 
 }

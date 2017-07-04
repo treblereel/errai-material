@@ -57,6 +57,7 @@ import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.ui.Widget;
 import gwt.material.design.client.base.MaterialWidget;
 import gwt.material.design.client.ui.MaterialDropDown;
+import gwt.material.design.client.ui.MaterialIcon;
 import gwt.material.design.client.ui.MaterialListBox;
 import gwt.material.design.client.ui.MaterialNavBar;
 import gwt.material.design.client.ui.MaterialTab;
@@ -71,6 +72,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -88,6 +90,18 @@ public class GwtMaterialUtil {
     static final String MATERIAL_ID = "material_id";
 
     private static final String[] tag_attr_white_list = {"href", "style"};
+
+    /*
+    * We have to init some widgets explicitly
+    */
+
+    private static Map<String, Class> initExplicitly = new HashMap<String, Class>() {{
+
+        put("materialtab", MaterialTab.class);
+        put("materialicon", MaterialIcon.class);
+        put("materialdropdown", MaterialDropDown.class);
+        put("materialnavbar", MaterialNavBar.class);
+    }};
 
     public static final Logger logger = LoggerFactory.getLogger(GwtMaterialUtil.class);
 
@@ -140,24 +154,6 @@ public class GwtMaterialUtil {
 
     }
 
-    public static VisitContext<TaggedElement> getElementByDataField(Element parserDiv, String lookup) {
-        logger.debug("getElementByDataField [" + lookup + "] ");
-        return Visit.depthFirst(parserDiv, new Visitor<TaggedElement>() {
-            @Override
-            public boolean visit(final VisitContextMutable<TaggedElement> context, final Element element) {
-                for (final AttributeType attrType : AttributeType.values()) {
-                    final String attrName = attrType.getAttributeName();
-                    final TaggedElement existingCandidate = context.getResult();
-                    if (element.hasAttribute(attrName) && element.getAttribute(attrName).equals(lookup)
-                            && (existingCandidate == null || existingCandidate.getAttributeType().ordinal() < attrType.ordinal())) {
-                        context.setResult(new TaggedElement(attrType, element));
-                    }
-                }
-                return true;
-            }
-        });
-    }
-
     public static Element getElementByAttribute(String html, String attrName, String value) {
         Element parserDiv = DOM.createDiv();
         parserDiv.setInnerHTML(html);
@@ -196,6 +192,16 @@ public class GwtMaterialUtil {
         return result;
     }
 
+    public static VisitContext<GwtMaterialUtil.TaggedElement> getElementByDataField(Element parserDiv, String lookup) {
+        return Visit.depthFirst(parserDiv, (context, element) -> {
+            if (hasDataField(element) && getDataFieldValue(element).equals(lookup)) {
+                context.setResult(new TaggedElement(AttributeType.DATA_FIELD, element));
+                return false;
+            }
+            return true;
+        });
+    }
+
     public static String getTag(Element elm) {
         return elm.getTagName().toLowerCase().replaceAll("-", "");
     }
@@ -227,15 +233,17 @@ public class GwtMaterialUtil {
         return dataFieldElements.get(getDataFieldValue(element));
     }
 
-    public Boolean isMaterialWidget(String tag) {
+    public static Boolean isMaterialWidget(String tag) {
         if (helper.isWidgetSupported(tag)) {
             return true;
         }
         return false;
     }
 
-    public boolean isMaterialWidget(Element element, Map<String, Widget> dataFieldElements) {
-        if (isMaterialWidget(element.getTagName())) {
+    public static boolean isMaterialWidget(Element element, Map<String, Widget> dataFieldElements) {
+        if (isMaterialWidget(element)) {
+            return true;
+        } else if (isMaterialWidget(element.getTagName())) {
             return true;
         } else if (!GwtMaterialUtil.getAttributesByName(element, "data-field").equals("")) {
             String id = GwtMaterialUtil.getAttributesByName(element, "data-field");
@@ -253,7 +261,8 @@ public class GwtMaterialUtil {
             String tag = matcher.getGroup(0);
             int index = tag.lastIndexOf("/");
             String mark = " self-closed=\"true\">";
-            String tagFixed = tag.substring(0, index).trim() + mark;
+            //String tagFixed = tag.substring(0, index).trim() + mark;
+            String tagFixed = tag.substring(0, index).trim() + ">";
             String tagName = matcher.getGroup(1);
             html = html.replace(tag, tagFixed + "</" + tagName + ">");
         }
@@ -276,22 +285,43 @@ public class GwtMaterialUtil {
     }
 
     public static void addWidgetToParent(Widget parent, Widget child) {
+
+        logger.warn("!!! addWidgetToParent " + parent.getClass().getSimpleName() + " " + child.getClass().getSimpleName());
+
+        if (parent instanceof MaterialDropDown) {
+            logger.warn("!!! MaterialDropDown");
+
+        }
+
+
         if (parent.getClass().equals(MaterialListBox.class)) {
             GwtMaterialUtil.addOptionToListBox((MaterialListBox) parent, (gwt.material.design.client.ui.html.Option) child);
-        } else if (parent instanceof MaterialDropDown) {
+        } else if (parent.getClass().equals(MaterialDropDown.class)) {
+            logger.warn("added as MaterialDropDown");
+
             GwtMaterialUtil.addWidgetItemToMaterialDropDown((MaterialDropDown) parent, child);
+               // afterAttachMaterialLinkToMaterialDropDown(parent, child, elm);
         } else if (parent.getClass().equals(MaterialTab.class)) {
+            logger.warn("added to MaterialTab");
+
             GwtMaterialUtil.addWidgetItemToUnorderedList((MaterialTab) parent, child);
         } else if (parent.getClass().equals(MaterialNavBar.class)) {
             GwtMaterialUtil.addWidgetToMaterialNavBar(parent, child);
         } else {
+            logger.warn("MaterialWidget");
+
             ((MaterialWidget) parent).add(child);
         }
     }
 
+    public static void afterAttachMaterialLinkToMaterialDropDown(Widget parent, Widget child, Element element) {
+        element.getParentElement().replaceChild(child.getElement().getParentElement(), element);
+    }
+
 
     public static void afterTemplateInitInvoke(Element root, String content, Map<String, Widget> templateFieldsMap) {
-        logger.warn("afterTemplateInitInvoke " + root.getInnerHTML());
+        logger.warn("afterTemplateInitInvoke " + content);
+        logger.warn("afterTemplateInitInvoke root " + root.getInnerHTML());
         new GwtMaterialPostInit(root, content, templateFieldsMap);
     }
 
@@ -388,6 +418,15 @@ public class GwtMaterialUtil {
             throw new RuntimeException("There was an error initializing the @DataField " + fieldName + " in the @Templated "
                     + componentType + ": " + t.getMessage(), t);
         }
+    }
+
+    public static boolean needsToBeInitExplicitly(Element tagged) {
+        logger.warn("needsToBeInitExplicitly " + tagged.getTagName() + " " + needsToBeInitExplicitly(tagged.getTagName()));
+        return needsToBeInitExplicitly(tagged.getTagName());
+    }
+
+    public static boolean needsToBeInitExplicitly(String tag) {
+        return initExplicitly.containsKey(tag.toLowerCase().replace("-", ""));
     }
 
     public static native JsArray<Node> getAttributes(Element elem) /*-{
