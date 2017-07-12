@@ -185,6 +185,12 @@ public class ErraiUITemplateDecoratorFacade {
         }
                 initStmts.add(Stmt.declareVariable(Element.class).named(ROOT_ELEMENT).
                         initializeWith(rootTemplateElement));
+
+        initStmts.add(invokeStatic(GwtMaterialUtil.class, "compositeComponentReplace", Stmt.loadVariable(ROOT_ELEMENT), decorable.getDecorableDeclaringType()
+                        .getFullyQualifiedName(), TemplatedCodeDecorator.getTemplateFileName(decorable.getDecorableDeclaringType()),
+                dataFieldElements, fieldsMetaMap, fieldsMap));
+
+
         initStmts.add(invokeStatic(GwtMaterialUtil.class,"beforeTemplateInitInvoke", Stmt.loadVariable(ROOT_ELEMENT), Stmt.loadVariable(MaterialCodeDecorator.FINAL_HTML_CONTENT), fieldsMap));
 
 

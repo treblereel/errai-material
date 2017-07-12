@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.jboss.errai.material.client.local.GwtMaterialUtil.ROOT_ELEMENT;
 import static org.jboss.errai.material.client.local.GwtMaterialUtil.addWidgetToParent;
 import static org.jboss.errai.material.client.local.GwtMaterialUtil.copyWidgetAttrsAndSetProperties;
 import static org.jboss.errai.material.client.local.GwtMaterialUtil.getDataFieldValue;
@@ -57,11 +58,22 @@ public class GwtMaterialPostInit {
     GwtMaterialPostInit(Element elm, String content, Map<String, Widget> templateFieldsMap) {
         this.templateFieldsMap = templateFieldsMap;
         this.original.setInnerHTML(content);
-
         if (hasDataField(elm)) {
             root = getDataFieldedWidget(elm, templateFieldsMap);
-            root.getElement().setInnerHTML(getElementByDataField(original, getDataFieldValue(elm)).getResult().getElement().getInnerHTML());
+            if (elm.hasAttribute(ROOT_ELEMENT)) {
+                root.getElement().setInnerHTML(original.getFirstChildElement().getInnerHTML());
+            } else {
+                root.getElement().setInnerHTML(getElementByDataField(original, getDataFieldValue(elm)).getResult().getElement().getInnerHTML());
+            }
+
             process(root.getElement());
+
+            if (elm.hasAttribute(ROOT_ELEMENT)) {
+                elm.removeAttribute(ROOT_ELEMENT);
+                elm.removeAllChildren();
+                getNodeChildren(root.getElement()).forEach(child -> elm.appendChild(child));
+            }
+
         } else {
             process(elm);
         }
@@ -87,7 +99,7 @@ public class GwtMaterialPostInit {
                     if (l.getKey() != null) {
                         addWidgetToParent(child, l.getKey());
                     } else if (l.getValue() != null) {
-                        //  child.getElement().appendChild(l.getValue());
+                          child.getElement().appendChild(l.getValue());
                     }
                 });
 
