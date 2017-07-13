@@ -51,6 +51,7 @@ public class CommonMaterialWidgetGenerator extends MaterialWidgetGenerator {
     private static final String GWT_MATERIAL_FACTORY_CLASS_NAME = "MaterialWidgetFactoryImpl";
     private final Set<String> defaultMethods = new HashSet<>();
     private JMethod invoke;
+    private boolean ifFirstStatement = true;
 
 
     public CommonMaterialWidgetGenerator() {
@@ -199,9 +200,18 @@ public class CommonMaterialWidgetGenerator extends MaterialWidgetGenerator {
         constructor.body().invoke("add" + tag);
     }
 
+
     private void generateWidgetInvoke(JCodeModel jCodeModel, Class clazz) {
-        invoke.body()._if(JExpr.ref("tag").invoke("equals").arg(clazz.getSimpleName().toLowerCase()))._then()
-                .assign(JExpr.ref("result"), JExpr._new(jCodeModel.ref(clazz)));
+        if(ifFirstStatement) {
+            invoke.body()._if(JExpr.ref("tag")
+                    .invoke("equals").arg(clazz.getSimpleName().toLowerCase()))._then()
+                    .assign(JExpr.ref("result"), JExpr._new(jCodeModel.ref(clazz)));
+            ifFirstStatement = false;
+
+        } else{
+            invoke.body().directStatement(" else if (tag.equals(\""+clazz.getSimpleName().toLowerCase() +"\")){ result = new "+clazz.getSimpleName()+"();  }");
+
+        }
 
     }
 

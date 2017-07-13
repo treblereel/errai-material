@@ -58,16 +58,6 @@ public abstract class MaterialWidgetGenerator {
         jc.direct("    public void " + holder.method.getName() + "(" + holder.iface.getCanonicalName() + " x, " + holder.param.getCanonicalName() + " y){  x." + holder.name + "(y);       }\n");
     }
 
-/*    public void generateNativeMethod(JDefinedClass jc, MethodHolder holder) {
-        if (Modifier.isAbstract(holder.iface.getModifiers()) && !holder.iface.isInterface()) {
-            String methodName = generateNativeMethodName(holder.method) + holder.widget.getSimpleName();
-            jc.direct("    public void " + methodName + "(" + MaterialWidget.class.getCanonicalName() + " x, " + holder.param.getCanonicalName() + " y){  ((" + holder.iface.getCanonicalName() + ")x)." + holder.name + "(y);       }\n");
-        } else {
-            jc.direct("    public native void " + generateNativeMethodName(holder.method) + "(Object x, Object s) *//*-{\nx.@" + holder.iface.getCanonicalName() + "::" + holder.name + "(" + doJNDIMethodSignature(holder.param) + ")(s);\n}-*//*;\n");
-        }
-
-    }*/
-
     protected void processMethods(Class materialWidget, Set<Method> methods) {
         ClassUtils.getAllInterfaces(materialWidget).stream().forEach(ifaces -> {
             if (ifaces.getName().startsWith("gwt.material.design.client.base.") ||
