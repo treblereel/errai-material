@@ -55,14 +55,7 @@ public class GwtMaterialPreInit {
         this.templateFieldsMap = templateFieldsMap;
         original = DOM.createDiv();
         original.setInnerHTML(content);
-
         process(null, root);
-
-        //process root element as a datafielded element
-/*        if(!hasDataField(root)){
-            processMaterialWidget(root);
-        }*/
-
 
     }
 
@@ -97,7 +90,6 @@ public class GwtMaterialPreInit {
 
     private Widget doMaterialWidget(Widget parent, Element element) {
         Widget candidate = null;
-        logger.warn("doMaterialWidget  " + element.getTagName() + " with parent " + (parent != null ? parent.getClass().getSimpleName() : " null") + " needsToBeInitExplicitly ? " + needsToBeInitExplicitly(element));
         if (parent == null || needsToBeInitExplicitly(element)) {
             candidate = processMaterialWidget(element);
         }
@@ -108,15 +100,8 @@ public class GwtMaterialPreInit {
     private Widget processMaterialWidget(Element element) {
         Widget candidate;
         Optional<Tuple<Widget, Boolean>> maybeExist = helper.invoke(element);
-
-        logger.warn(" processMaterialWidget " + element.getTagName() + " " + maybeExist.isPresent() );
-
         if (maybeExist.isPresent()) {
-            logger.warn(" processMaterialWidget 2 " +  maybeExist.get().getValue());
-
-
             if (maybeExist.get().getValue()) {
-                logger.warn("add to  templateFieldsMap " + element.getTagName());
                 candidate = maybeExist.get().getKey();
                 String id = DOM.createUniqueId();
                 element.setAttribute(DATA_FIELD, id);

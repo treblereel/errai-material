@@ -44,9 +44,9 @@ import static org.jboss.errai.material.client.local.GwtMaterialUtil.hasDataField
  *         Created by treblereel on 6/23/17.
  */
 public class GwtMaterialPostInit {
-    Logger logger = LoggerFactory.getLogger(this.getClass().getSimpleName());
+    private final Logger logger = LoggerFactory.getLogger(this.getClass().getSimpleName());
 
-    private Map<String, Widget> templateFieldsMap;
+    private final Map<String, Widget> templateFieldsMap;
 
     private final MaterialWidgetFactoryHelper helper = IOC.getBeanManager().lookupBean(MaterialWidgetFactoryHelper.class).getInstance();
 
@@ -55,22 +55,25 @@ public class GwtMaterialPostInit {
     private Widget root;
 
 
-    GwtMaterialPostInit(Element elm, String content, Map<String, Widget> templateFieldsMap) {
-        this.templateFieldsMap = templateFieldsMap;
+    GwtMaterialPostInit(final Element elm, final String content, final Map<String, Widget> map) {
+        this.templateFieldsMap = map;
         this.original.setInnerHTML(content);
         if (hasDataField(elm)) {
             root = getDataFieldedWidget(elm, templateFieldsMap);
             if (elm.hasAttribute(ROOT_ELEMENT)) {
-                root.getElement().setInnerHTML(original.getFirstChildElement().getInnerHTML());
+                GwtMaterialUtil.TaggedElement result = getElementByDataField(original, getDataFieldValue(elm)).getResult();
+                if (result != null) {
+                    root.getElement().setInnerHTML(result.getElement().getInnerHTML());
+                } else {
+                    root.getElement().setInnerHTML(content);
+                }
+                elm.removeAllChildren();
             } else {
                 root.getElement().setInnerHTML(getElementByDataField(original, getDataFieldValue(elm)).getResult().getElement().getInnerHTML());
             }
-
             process(root.getElement());
-
             if (elm.hasAttribute(ROOT_ELEMENT)) {
                 elm.removeAttribute(ROOT_ELEMENT);
-                elm.removeAllChildren();
                 getNodeChildren(root.getElement()).forEach(child -> elm.appendChild(child));
             }
 
@@ -83,7 +86,6 @@ public class GwtMaterialPostInit {
     private Tuple<Widget, Element> process(Element element) {
         List<Tuple<Widget, Element>> list = new LinkedList<>();
         Tuple<Widget, Element> result = new Tuple<>();
-
         if (element.getNodeType() == 1) {
             if (GwtMaterialUtil.isMaterialWidget(element, templateFieldsMap)) {
                 Widget child = getWidget(element);
@@ -92,38 +94,17 @@ public class GwtMaterialPostInit {
                         list.add(process((Element) c));
                     }
                 }
-
                 element.removeAllChildren();
-
                 list.forEach(l -> {
                     if (l.getKey() != null) {
-                        addWidgetToParent(child, l.getKey());
+                        addWidgetToParent(child, l.getKey(), templateFieldsMap);
                     } else if (l.getValue() != null) {
-                          child.getElement().appendChild(l.getValue());
+                        child.getElement().appendChild(l.getValue());
                     }
                 });
 
                 result.setKey(child);
-            }/* else {
-                logger.warn("                                  process detail simple " + element.getTagName());
-
-
-                if (GwtMaterialUtil.hasСhildren(element)) {
-                    for (Node child : getNodeChildren(element)) {
-                        list.add(process((Element) child));
-                    }
-
-                }
-
-                list.forEach(l -> {
-                    if (l.getKey() != null) {
-                        element.appendChild(l.getKey().getElement());
-                    } else if (l.getValue() != null) {
-                        element.appendChild(l.getValue());
-                    }
-                });
-                result.setValue(element);
-            }*/
+            }
         }
         return result;
     }

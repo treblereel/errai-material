@@ -243,11 +243,10 @@ public class MaterialCodeDecorator extends IOCDecoratorExtension<Templated> {
                     loadVariable(dataFieldElementsVarName), fieldsMap, loadVariable(dataFieldMetasVarName));
 
             facade.generateEventHandlerMethodClasses(decorable, controller, initStmts, dataFieldElementsVarName, fieldsMap);
+
+            facade.generateAfterTemplateInitInvoke(initStmts, fieldsMap);
+
         }
-
-
-
-
 
     }
 }

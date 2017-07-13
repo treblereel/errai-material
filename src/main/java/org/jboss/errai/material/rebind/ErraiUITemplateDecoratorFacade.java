@@ -211,7 +211,6 @@ public class ErraiUITemplateDecoratorFacade {
 
         initStmts.add(Stmt.invokeStatic(TemplateUtil.class, initMethodName, component, Stmt.loadVariable(ROOT_ELEMENT),
                 Stmt.nestedCall(fieldsMap).invoke("values")));
-        initStmts.add(invokeStatic(GwtMaterialUtil.class,"afterTemplateInitInvoke", Stmt.loadVariable(ROOT_ELEMENT), Stmt.loadVariable(MaterialCodeDecorator.FINAL_HTML_CONTENT), fieldsMap));
 
     }
 
@@ -224,5 +223,9 @@ public class ErraiUITemplateDecoratorFacade {
         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    void generateAfterTemplateInitInvoke(final List<Statement> initStmts, final Statement fieldsMap){
+        initStmts.add(invokeStatic(GwtMaterialUtil.class,"afterTemplateInitInvoke", Stmt.loadVariable(ROOT_ELEMENT), Stmt.loadVariable(MaterialCodeDecorator.FINAL_HTML_CONTENT), fieldsMap));
     }
 }

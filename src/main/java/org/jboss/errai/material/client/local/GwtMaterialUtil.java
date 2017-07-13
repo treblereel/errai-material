@@ -246,7 +246,7 @@ public class GwtMaterialUtil {
         return false;
     }
 
-    public static boolean isMaterialWidget(Element element, Map<String, Widget> dataFieldElements) {
+    public static boolean isMaterialWidget(final Element element, final Map<String, Widget> dataFieldElements) {
         if (isMaterialWidget(element)) {
             return true;
         } else if (isMaterialWidget(element.getTagName())) {
@@ -290,32 +290,16 @@ public class GwtMaterialUtil {
 
     }
 
-    public static void addWidgetToParent(Widget parent, Widget child) {
-
-        logger.warn("!!! addWidgetToParent " + parent.getClass().getSimpleName() + " " + child.getClass().getSimpleName());
-
-        if (parent instanceof MaterialDropDown) {
-            logger.warn("!!! MaterialDropDown");
-
-        }
-
-
+    public static void addWidgetToParent(final Widget parent, final Widget child, final Map<String, Widget> map) {
         if (parent.getClass().equals(MaterialListBox.class)) {
-            GwtMaterialUtil.addOptionToListBox((MaterialListBox) parent, (gwt.material.design.client.ui.html.Option) child);
+            addOptionToListBox((MaterialListBox) parent, (gwt.material.design.client.ui.html.Option) child);
         } else if (parent.getClass().equals(MaterialDropDown.class)) {
-            logger.warn("added as MaterialDropDown");
-
-            GwtMaterialUtil.addWidgetItemToMaterialDropDown((MaterialDropDown) parent, child);
-            // afterAttachMaterialLinkToMaterialDropDown(parent, child, elm);
+            addWidgetItemToMaterialDropDown((MaterialDropDown) parent, child);
         } else if (parent.getClass().equals(MaterialTab.class)) {
-            logger.warn("added to MaterialTab");
-
-            GwtMaterialUtil.addWidgetItemToUnorderedList((MaterialTab) parent, child);
+            addWidgetItemToUnorderedList((MaterialTab) parent, child);
         } else if (parent.getClass().equals(MaterialNavBar.class)) {
-            GwtMaterialUtil.addWidgetToMaterialNavBar(parent, child);
+            addWidgetToMaterialNavBar(parent, child);
         } else {
-            logger.warn("MaterialWidget");
-
             ((MaterialWidget) parent).add(child);
         }
     }
@@ -326,50 +310,39 @@ public class GwtMaterialUtil {
 
 
     public static void afterTemplateInitInvoke(Element root, String content, Map<String, Widget> templateFieldsMap) {
-        logger.warn("afterTemplateInitInvoke " + content);
-        logger.warn("afterTemplateInitInvoke root " + root.getInnerHTML());
         if (hasСhildren(root) || !Strings.isNullOrEmpty(content)) {
             new GwtMaterialPostInit(root, content, templateFieldsMap);
         }
     }
 
     public static void beforeTemplateInitInvoke(Element root, String content, Map<String, Widget> templateFieldsMap) {
-        logger.warn("beforeTemplateInitInvoke 0.5" + root.getAttribute(ROOT_ELEMENT));
-        logger.warn("beforeTemplateInitInvoke 0.6" + root.getInnerHTML());
-
-
-        logger.warn("beforeTemplateInitInvoke " + root.getInnerHTML());
-        logger.warn("beforeTemplateInitInvoke html " + content);
-
-        if (hasСhildren(root)) {
+        if (hasСhildren(root) || !Strings.isNullOrEmpty(content)) {
             new GwtMaterialPreInit(root, content, templateFieldsMap);
         }
+
     }
 
     public static void compositeComponentReplace(final Element rootElement, final String componentType, final String templateFile,
                                                  final Map<String, Element> dataFieldElements, final Map<String, DataFieldMeta> dataFieldMetas,
                                                  final Map<String, Widget> templateFieldsMap) {
 
-        if (!hasDataField(rootElement)) {
+        if (!hasDataField(rootElement) || (hasDataField(rootElement) && !templateFieldsMap.containsKey(getDataFieldValue(rootElement)))) {
             Optional<Tuple<Widget, Boolean>> maybeExist = helper.invoke(rootElement);
             if (maybeExist.isPresent()) {
                 if (maybeExist.get().getValue()) {
-                    String id = DOM.createUniqueId();
+                    String id = hasDataField(rootElement) ? getDataFieldValue(rootElement) : DOM.createUniqueId();
+
                     rootElement.setAttribute(DATA_FIELD, id);
                     rootElement.setAttribute(ROOT_ELEMENT, id);
                     dataFieldElements.put(id, rootElement);
                     dataFieldMetas.put(id, new DataFieldMeta());
 
                     Widget candidate = maybeExist.get().getKey();
+                    candidate.getElement().setInnerHTML(rootElement.getInnerHTML());
                     templateFieldsMap.put(id, candidate);
-
-                    // проблема в том что в post прилетает не тот виджет что был заменен
-
 
                     try {
                         TemplateUtil.compositeComponentReplace(componentType, templateFile, () -> candidate, dataFieldElements, dataFieldMetas, id);
-                       // Element element = (Element)dataFieldElements.get(fieldName);
-
                     } catch (final Throwable t) {
                         throw new RuntimeException("There was an error initializing the @Templated "
                                 + componentType + ": " + t.getMessage(), t);
@@ -378,9 +351,6 @@ public class GwtMaterialUtil {
             }else{
                 throw new RuntimeException("Can't find widget " + rootElement.getTagName());
             }
-
-
-
 
         }
     }
@@ -472,7 +442,6 @@ public class GwtMaterialUtil {
     }
 
     public static boolean needsToBeInitExplicitly(Element tagged) {
-        logger.warn("needsToBeInitExplicitly " + tagged.getTagName() + " " + needsToBeInitExplicitly(tagged.getTagName()));
         return needsToBeInitExplicitly(tagged.getTagName());
     }
 
@@ -488,7 +457,7 @@ public class GwtMaterialUtil {
         x.@com.google.gwt.user.client.ui.Widget::onAttach()();
     }-*/;
 
-    public static native void add(Widget parent, Widget child) /*-{
+    public static native void add(MaterialWidget parent, Widget child) /*-{
         parent.@gwt.material.design.client.base.MaterialWidget::add(Lcom/google/gwt/user/client/ui/Widget;)(child);
     }-*/;
 
