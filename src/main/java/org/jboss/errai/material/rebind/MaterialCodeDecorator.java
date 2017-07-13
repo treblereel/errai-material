@@ -125,7 +125,6 @@ public class MaterialCodeDecorator extends IOCDecoratorExtension<Templated> {
         postInitializationStatements.add(StringStatement.of("}"));
 
         controller.addInitializationStatementsToEnd(postInitializationStatements);
-        controller.addDestructionStatements(facade.generateTemplateDestruction(decorable));
     }
 
     private void generateTemplatedInitialization(final Decorable decorable,
