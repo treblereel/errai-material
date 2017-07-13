@@ -95,9 +95,6 @@ public abstract class AbstractBaseWidgetFactory implements MaterialWidgetFactory
     }
 
     public Boolean isWidgetExist(String tag){
-
-        LoggerFactory.getLogger(this.getClass()).warn(" tag lookup " + tag);
-
         return widgets.containsKey(tag.toLowerCase().replace("-",""));
     }
 

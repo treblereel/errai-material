@@ -80,8 +80,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Supplier;
-
 
 
 /**
@@ -188,10 +186,14 @@ public class GwtMaterialUtil {
     }
 
     public static List<Node> getNodeChildren(Node node) {
+        return getNodeChildren(node, Node.TEXT_NODE);
+    }
+
+    public static List<Node> getNodeChildren(Node node, int mode) {
         List<Node> result = new LinkedList<>();
         for (int i = 0; i < node.getChildNodes().getLength(); i++) {
             Node child = node.getChildNodes().getItem(i);
-            if (child.getNodeType() == Node.ELEMENT_NODE || child.getNodeType() == Node.TEXT_NODE) {
+            if (child.getNodeType() <= mode) {
                 result.add(child);
             }
         }
@@ -348,7 +350,7 @@ public class GwtMaterialUtil {
                                 + componentType + ": " + t.getMessage(), t);
                     }
                 }
-            }else{
+            } else {
                 throw new RuntimeException("Can't find widget " + rootElement.getTagName());
             }
 

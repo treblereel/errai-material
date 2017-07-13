@@ -20,6 +20,8 @@ import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Node;
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.ui.Widget;
+import gwt.material.design.client.constants.Position;
+import gwt.material.design.client.ui.MaterialTooltip;
 import org.jboss.errai.ioc.client.container.IOC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +38,7 @@ import static org.jboss.errai.material.client.local.GwtMaterialUtil.getDataField
 import static org.jboss.errai.material.client.local.GwtMaterialUtil.getDataFieldedWidget;
 import static org.jboss.errai.material.client.local.GwtMaterialUtil.getElementByDataField;
 import static org.jboss.errai.material.client.local.GwtMaterialUtil.getNodeChildren;
+import static org.jboss.errai.material.client.local.GwtMaterialUtil.getTag;
 import static org.jboss.errai.material.client.local.GwtMaterialUtil.hasDataField;
 
 
@@ -122,11 +125,40 @@ public class GwtMaterialPostInit {
                     Widget candidate = maybeExist.get().getKey();
                     copyWidgetAttrsAndSetProperties(element, candidate);
                     return candidate;
-
+                // this widget is material but it doesn't extends MaterialWidget
+                }else{
+                    Widget candidate = maybeExist.get().getKey();
+                    copyWidgetAttrsAndSetProperties(element, candidate);
+                    return candidate;
                 }
+            }else if(getTag(element).equals("materialtooltip")){
+                return processMaterialTooltip(element);
             }
         }
         throw new RuntimeException("Can't find widget " + element.getTagName());
+    }
+
+    private Widget processMaterialTooltip(Element element) {
+        if (GwtMaterialUtil.hasСhildren(element) && getNodeChildren(element, Node.ELEMENT_NODE).size() == 1) {
+            Widget widget = getWidget(element.getFirstChildElement());
+            MaterialTooltip materialTooltip = new MaterialTooltip(widget);
+            if (element.hasAttribute("text")) {
+                materialTooltip.setText(element.getAttribute("text"));
+            }
+            if (element.hasAttribute("tooltipHTML")) {
+                materialTooltip.setHtml(element.getAttribute("tooltipHTML"));
+            }
+            if (element.hasAttribute("delayMs")) {
+                materialTooltip.setDelayMs(Integer.parseInt(element.getAttribute("delayMs")));
+            }
+            if (element.hasAttribute("position")) {
+                materialTooltip.setPosition((Position) GwtMaterialUtil.parseAttrValue(Position.class, element.getAttribute("position")));
+            }
+            element.removeAllChildren(); // prevent iterating child twice
+           return widget;
+        }
+        throw new IllegalStateException("MaterialTooltip must contain only one child widget");
+
     }
 
 }

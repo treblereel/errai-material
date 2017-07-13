@@ -85,7 +85,10 @@ public class MaterialWidgetFactoryHelper {
         }
         material = gwtNonMaterialWidgetFactory.invoke(elm);
         if (material.isPresent()) {
-            return Optional.of(new Tuple<>(material.get(), false));
+
+            boolean isExtendsWidget = getMaterialWidgetDefinition(elm.getTagName()).get().getExtendsMaterialWidget();
+
+            return Optional.of(new Tuple<>(material.get(), isExtendsWidget));
         }
         return Optional.empty();
     }
