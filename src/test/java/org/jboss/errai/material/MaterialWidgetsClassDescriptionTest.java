@@ -21,6 +21,7 @@ import com.google.common.reflect.TypeToken;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.user.client.ui.CheckBox;
 import com.google.gwt.user.client.ui.HasText;
+import com.google.gwt.user.client.ui.Widget;
 import com.google.gwtmockito.GwtMockitoTestRunner;
 import gwt.material.design.client.base.AbstractButton;
 import gwt.material.design.client.base.BaseCheckBox;
@@ -69,14 +70,13 @@ public class MaterialWidgetsClassDescriptionTest {
     @Test
     public void materialDatePickerTest() throws IOException {
         Set<Method> methods = parseMethods(MaterialDatePicker.class);
-        //     Assert.assertEquals(82, methods.size());
+        Assert.assertEquals(110, methods.size());
     }
 
     @Test
     public void materialMaterialListValueBoxTest() throws IOException {
         Set<Method> methods = parseMethods(MaterialListValueBox.class);
-
-        //   Assert.assertEquals(78, methods.size());
+        Assert.assertEquals(103, methods.size());
     }
 
     private Set<Method> parseMethods(Class c) throws IOException {
@@ -122,46 +122,19 @@ public class MaterialWidgetsClassDescriptionTest {
     @Test
     public void methodsMaterialTextBoxTest() throws IOException {
         Set<Method> methods = parseMethods(MaterialTextBox.class);
-        methods.stream().sorted(Comparator.comparing(Method::getName)).forEach(m -> {
-            // logger.warn(" m " + m.getName() + " ");
-        });
         Assert.assertEquals(110, methods.size());
-    }
-
-    @Test
-    public void methodsMaterialRadioButtonTest() throws IOException {
-
-        Map<String, Option> map = new HashMap();
-
-/*        Set<String> ifaces = new HashSet();
-
-        ifaces.add("com.google.gwt.user.client.ui");
-        ifaces.add("gwt.material.design.client.base");
-        Set<Method> methods = new HashSet();
-
-        //MaterialRebindUtils.findAllSettableMethods(MaterialRadioButton.class, methods);
-        Assert.assertEquals(27, methods.size());*/
     }
 
     @Test
     public void materialMaterialWidgetTest() throws IOException {
         Set<Method> methods = parseMethods(MaterialWidget.class);
-        //  Assert.assertEquals(76, methods.size());
+        Assert.assertEquals(78, methods.size());
     }
 
     @Test
     public void materialMaterialButtonTest() throws IOException {
         Set<Method> methods = parseMethods(MaterialButton.class);
-        //      Assert.assertEquals(65, methods.size());
-    }
-
-
-    @Test
-    public void gwtMaterialWidgetStoreTest() {
-/*
-        new MaterialWidgetFactoryGenerator();
-*/
-
+        Assert.assertEquals(90, methods.size());
     }
 
     @Test
@@ -212,28 +185,6 @@ public class MaterialWidgetsClassDescriptionTest {
         Assert.assertNotNull(wavesTypeObject);
         Assert.assertEquals("waves-default", ((WavesType) wavesTypeObject).getCssName());
         Assert.assertEquals("DEFAULT", ((WavesType) wavesTypeObject).name());
-    }
-
-    @Test
-    public void classToString() {
-        //gwt.material.design.client.base.MaterialWidget
-        Class param = boolean.class;
-        if (param.equals(boolean.class)) {
-            //   logger.warn("yeap");
-        } else {
-            //   logger.warn("nope");
-        }
-
-
-        //   logger.warn("classToString " + param.getCanonicalName().replaceAll("\\.","/"));
-        // Assert.assertEquals(Style.Visibility.HIDDEN, com.google.gwt.dom.client.Style.Visibility.valueOf("HIDDEN"));
-    }
-
-    @Test
-    public void checkAbstractClass() {
-
-        System.out.println(Modifier.isAbstract(AbstractButton.class.getModifiers()) + " " + AbstractButton.class.isInterface() + " " + Modifier.isAbstract(HasText.class.getModifiers()));
-
     }
 
     //@Test

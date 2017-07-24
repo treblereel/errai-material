@@ -57,10 +57,12 @@ import com.google.gwt.regexp.shared.RegExp;
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.ui.Widget;
 import gwt.material.design.client.base.MaterialWidget;
+import gwt.material.design.client.ui.MaterialBreadcrumb;
 import gwt.material.design.client.ui.MaterialDropDown;
 import gwt.material.design.client.ui.MaterialIcon;
 import gwt.material.design.client.ui.MaterialListBox;
 import gwt.material.design.client.ui.MaterialNavBar;
+import gwt.material.design.client.ui.MaterialSideNav;
 import gwt.material.design.client.ui.MaterialTab;
 import gwt.material.design.client.ui.html.UnorderedList;
 import org.jboss.errai.ioc.client.container.IOC;
@@ -88,12 +90,17 @@ import java.util.Optional;
  */
 public class GwtMaterialUtil {
     private static final MaterialWidgetFactoryHelper helper = IOC.getBeanManager().lookupBean(MaterialWidgetFactoryHelper.class).getInstance();
+    private static final GwtMaterialContainer container = IOC.getBeanManager().lookupBean(GwtMaterialContainer.class).getInstance();
     private static final String HTML_VOID_TAG_PATTERN = "<([m,M]aterial-\\w*|div)(\"[^\"]*\"|[^'\">])*/>";
-    static final String DATA_FIELD = "data-field";
-    static final String MATERIAL_ID = "material_id";
-    static final String ROOT_ELEMENT = "root_element";
 
-    private static final String[] tag_attr_white_list = {"href", "style"};
+    static final String DATA_FIELD = "data-field";
+    static final String DATA_ACTIVATES = "data-activates";
+    static final String MATERIAL_WIDGET = "material-widget";
+    static final String ACTIVATOR = "activator";
+    static final String ROOT_ELEMENT = "root_element";
+    static final String HTML_FRAGMENT = "html_fragment";
+
+    private static final String[] tag_attr_white_list = {"href", "style", "activates", DATA_ACTIVATES};
 
     /*
     * We have to init some widgets explicitly
@@ -105,6 +112,7 @@ public class GwtMaterialUtil {
         put("materialicon", MaterialIcon.class);
         put("materialdropdown", MaterialDropDown.class);
         put("materialnavbar", MaterialNavBar.class);
+
     }};
 
     public static final Logger logger = LoggerFactory.getLogger(GwtMaterialUtil.class);
@@ -157,6 +165,11 @@ public class GwtMaterialUtil {
         }
 
     }
+
+    public static String getMaterialWidgetFieldValue(Element elm) {
+        return elm.getAttribute(MATERIAL_WIDGET);
+    }
+
 
     public static Element getElementByAttribute(String html, String attrName, String value) {
         Element parserDiv = DOM.createDiv();
@@ -218,8 +231,21 @@ public class GwtMaterialUtil {
         return elm.hasAttribute(DATA_FIELD);
     }
 
-    public static boolean hasMaterialIdField(Element elm) {
-        return elm.hasAttribute(MATERIAL_ID);
+    public static boolean hasMaterialWidgetField(Element elm) {
+        return elm.hasAttribute(MATERIAL_WIDGET);
+    }
+
+    public static boolean isMaterialWidget(final Element element, final Map<String, Widget> dataFieldElements) {
+
+        if (element.hasAttribute(MATERIAL_WIDGET) && isMaterialWidget(element.getAttribute(MATERIAL_WIDGET))) {
+            return true;
+        } else if (!getAttributesByName(element, DATA_FIELD).equals("")) {
+            String id = getAttributesByName(element, DATA_FIELD);
+            if (dataFieldElements.containsKey(id) && dataFieldElements.get(id).getClass().getSimpleName().toLowerCase().startsWith("material")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static boolean isMaterialWidget(Element element) {
@@ -233,10 +259,6 @@ public class GwtMaterialUtil {
         return elm.getAttribute(DATA_FIELD);
     }
 
-    public static String getMaterialIdFieldValue(Element elm) {
-        return elm.getAttribute(MATERIAL_ID);
-    }
-
     public static Widget getDataFieldedWidget(Element element, Map<String, Widget> dataFieldElements) {
         return dataFieldElements.get(getDataFieldValue(element));
     }
@@ -248,33 +270,58 @@ public class GwtMaterialUtil {
         return false;
     }
 
-    public static boolean isMaterialWidget(final Element element, final Map<String, Widget> dataFieldElements) {
-        if (isMaterialWidget(element)) {
-            return true;
-        } else if (isMaterialWidget(element.getTagName())) {
-            return true;
-        } else if (!GwtMaterialUtil.getAttributesByName(element, "data-field").equals("")) {
-            String id = GwtMaterialUtil.getAttributesByName(element, "data-field");
-            if (dataFieldElements.containsKey(id) && dataFieldElements.get(id).getClass().getSimpleName().toLowerCase().startsWith("material")) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-
     public static String closeVoidTags(String html) {
         RegExp regExp = RegExp.compile(HTML_VOID_TAG_PATTERN, "g");
         for (MatchResult matcher = regExp.exec(html); matcher != null; matcher = regExp.exec(html)) {
             String tag = matcher.getGroup(0);
             int index = tag.lastIndexOf("/");
-            String mark = " self-closed=\"true\">";
-            //String tagFixed = tag.substring(0, index).trim() + mark;
             String tagFixed = tag.substring(0, index).trim() + ">";
             String tagName = matcher.getGroup(1);
             html = html.replace(tag, tagFixed + "</" + tagName + ">");
         }
-        return html;
+
+        Element container = DOM.createDiv();
+        container.setInnerHTML(html);
+        Element root = container.getFirstChildElement();
+
+        if (!hasDataField(root)) {
+            if (root.getTagName().toLowerCase().startsWith("material") && helper.isWidgetSupported(root)) {
+                Element newRoot = DOM.createDiv();
+                copyAttrs(root, newRoot);
+                newRoot.setAttribute(MATERIAL_WIDGET, root.getTagName());
+                newRoot.setInnerHTML(root.getInnerHTML());
+                container.replaceChild(newRoot, root);
+            } else {
+                container.getFirstChildElement().setAttribute(MATERIAL_WIDGET, "div");
+            }
+        }
+        if (hasСhildren(container.getFirstChildElement())) {
+            getNodeChildren(container.getFirstChildElement()).forEach(c -> process((Element) c));
+        }
+        return container.getInnerHTML();
+    }
+
+    private static void process(Element parent) {
+        if (parent.getNodeType() == Node.ELEMENT_NODE) {
+            if (!hasMaterialWidgetField(parent) && helper.isWidgetSupported(parent)) {
+                String tag = parent.getTagName();
+                Element temp = DOM.createDiv();
+                temp.setAttribute(MATERIAL_WIDGET, tag);
+                temp.setInnerHTML(parent.getInnerHTML());
+
+                JsArray<Node> attrs = getAttributes(parent);
+                for (int i = 0; i < attrs.length(); i++) {
+                    temp.setAttribute(attrs.get(i).getNodeName(), attrs.get(i).getNodeValue());
+                }
+                parent.getParentElement().replaceChild(temp, parent);
+                getNodeChildren(temp).forEach(child -> process((Element) child));
+
+            } else {
+                getNodeChildren(parent).forEach(child -> process((Element) child));
+            }
+        } else {
+            getNodeChildren(parent).forEach(child -> process((Element) child));
+        }
     }
 
     public static void copyWidgetAttrsAndSetProperties(Element e, Widget obj) {
@@ -301,8 +348,39 @@ public class GwtMaterialUtil {
             addWidgetItemToUnorderedList((MaterialTab) parent, child);
         } else if (parent.getClass().equals(MaterialNavBar.class)) {
             addWidgetToMaterialNavBar(parent, child);
+        } else if (child instanceof MaterialNavBar) {
+            ((MaterialWidget) parent).add(child);
+        } else if (child instanceof MaterialSideNav) {
+            addMaterialSideNavToParent(parent, child, map);
         } else {
             ((MaterialWidget) parent).add(child);
+        }
+    }
+
+    private static void addMaterialSideNavToParent(Widget parent, Widget child, Map<String, Widget> map) {
+        if (child.getElement().hasAttribute(ACTIVATOR)) {
+            String id = child.getElement().getAttribute(ACTIVATOR);
+            ((MaterialSideNav) child).setId(id);
+            Optional<Map.Entry<String, Widget>> result = map.entrySet().stream().filter(m -> m.getValue() instanceof MaterialNavBar).filter(m ->
+                    ((MaterialNavBar) m.getValue()).getActivates().equals(id)).findFirst();
+            if (result.isPresent()) {
+                Element navBarParent = result.get().getValue().getElement().getParentElement();
+                Widget navBar = result.get().getValue();
+                container.add(navBar);
+                container.add(child);
+                navBarParent.appendChild(navBar.getElement());
+                parent.getElement().appendChild(child.getElement());
+            } else {
+                throw new IllegalArgumentException("Could not setup MaterialSideNav please ensure you have MaterialNavBar with an activator setup to match this widgets id.");
+            }
+        }
+    }
+
+    public static void copyAttrs(Element from, Element to) {
+        JsArray<Node> nodes = getAttributes(from);
+        for (int t = 0; t < nodes.length(); t++) {
+            Node n = nodes.get(t);
+            to.setAttribute(n.getNodeName(), n.getNodeValue());
         }
     }
 
@@ -327,33 +405,19 @@ public class GwtMaterialUtil {
     public static void compositeComponentReplace(final Element rootElement, final String componentType, final String templateFile,
                                                  final Map<String, Element> dataFieldElements, final Map<String, DataFieldMeta> dataFieldMetas,
                                                  final Map<String, Widget> templateFieldsMap) {
+        if (hasDataField(rootElement) && rootElement.hasAttribute(ROOT_ELEMENT) && templateFieldsMap.containsKey(getDataFieldValue(rootElement))) {
+            String id = getDataFieldValue(rootElement);
+            Widget candidate = templateFieldsMap.get(id);
 
-        if (!hasDataField(rootElement) || (hasDataField(rootElement) && !templateFieldsMap.containsKey(getDataFieldValue(rootElement)))) {
-            Optional<Tuple<Widget, Boolean>> maybeExist = helper.invoke(rootElement);
-            if (maybeExist.isPresent()) {
-                if (maybeExist.get().getValue()) {
-                    String id = hasDataField(rootElement) ? getDataFieldValue(rootElement) : DOM.createUniqueId();
+            dataFieldElements.put(id, rootElement);
+            dataFieldMetas.put(id, new DataFieldMeta());
 
-                    rootElement.setAttribute(DATA_FIELD, id);
-                    rootElement.setAttribute(ROOT_ELEMENT, id);
-                    dataFieldElements.put(id, rootElement);
-                    dataFieldMetas.put(id, new DataFieldMeta());
-
-                    Widget candidate = maybeExist.get().getKey();
-                    candidate.getElement().setInnerHTML(rootElement.getInnerHTML());
-                    templateFieldsMap.put(id, candidate);
-
-                    try {
-                        TemplateUtil.compositeComponentReplace(componentType, templateFile, () -> candidate, dataFieldElements, dataFieldMetas, id);
-                    } catch (final Throwable t) {
-                        throw new RuntimeException("There was an error initializing the @Templated "
-                                + componentType + ": " + t.getMessage(), t);
-                    }
-                }
-            } else {
-                throw new RuntimeException("Can't find widget " + rootElement.getTagName());
+            try {
+                TemplateUtil.compositeComponentReplace(componentType, templateFile, () -> candidate, dataFieldElements, dataFieldMetas, id);
+            } catch (final Throwable t) {
+                throw new RuntimeException("There was an error initializing the @Templated "
+                        + componentType + ": " + t.getMessage(), t);
             }
-
         }
     }
 
@@ -375,7 +439,7 @@ public class GwtMaterialUtil {
                         obj.addStyleName(n.getNodeValue());
                     }
                     attrToRemove.add(n);
-                } else if (n.getNodeName().toLowerCase().equals("self-closed")) {
+                } else if (n.getNodeName().toLowerCase().equals(MATERIAL_WIDGET)) {
                     attrToRemove.add(n);
                 } else {
                     obj.getElement().setAttribute(n.getNodeName(), n.getNodeValue());
@@ -431,6 +495,19 @@ public class GwtMaterialUtil {
             }
         }
         return "";
+    }
+
+    public static boolean isStringBlank(final CharSequence cs) {
+        int strLen;
+        if (cs == null || (strLen = cs.length()) == 0) {
+            return true;
+        }
+        for (int i = 0; i < strLen; i++) {
+            if (Character.isWhitespace(cs.charAt(i)) == false) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static void compositeComponentReplace(final String componentType, final String templateFile, final Element field,

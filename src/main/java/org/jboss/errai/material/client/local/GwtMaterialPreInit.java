@@ -20,6 +20,8 @@ import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Node;
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.ui.Widget;
+import gwt.material.design.client.ui.MaterialPanel;
+import gwt.material.design.client.ui.MaterialSideNav;
 import org.jboss.errai.ioc.client.container.IOC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,15 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.jboss.errai.material.client.local.GwtMaterialUtil.DATA_FIELD;
-import static org.jboss.errai.material.client.local.GwtMaterialUtil.ROOT_ELEMENT;
-import static org.jboss.errai.material.client.local.GwtMaterialUtil.copyWidgetAttrsAndSetProperties;
-import static org.jboss.errai.material.client.local.GwtMaterialUtil.getDataFieldValue;
-import static org.jboss.errai.material.client.local.GwtMaterialUtil.getDataFieldedWidget;
-import static org.jboss.errai.material.client.local.GwtMaterialUtil.getElementByDataField;
-import static org.jboss.errai.material.client.local.GwtMaterialUtil.getNodeChildren;
-import static org.jboss.errai.material.client.local.GwtMaterialUtil.hasDataField;
-import static org.jboss.errai.material.client.local.GwtMaterialUtil.needsToBeInitExplicitly;
+import static org.jboss.errai.material.client.local.GwtMaterialUtil.*;
 
 /**
  * @author Dmitrii Tikhomirov <chani@me.com>
@@ -53,58 +47,88 @@ public class GwtMaterialPreInit {
 
     GwtMaterialPreInit(Element root, String content, Map<String, Widget> templateFieldsMap) {
         this.templateFieldsMap = templateFieldsMap;
-        original = DOM.createDiv();
-        original.setInnerHTML(content);
-        process(null, root);
+        this.original = DOM.createDiv();
+        this.original.setInnerHTML(content);
+
+        if (hasDataField(root)) {
+            GwtMaterialUtil.TaggedElement result = getElementByDataField(original, getDataFieldValue(root)).getResult();
+            if (result != null) {
+                root.setInnerHTML(result.getElement().getInnerHTML());
+            } else {
+                root.setInnerHTML(content);
+            }
+        } else {
+            root.setInnerHTML(content);
+        }
+
+        processRootField(root);
+        getNodeChildren(root).forEach(c -> process(false, (Element) c));
+    }
+
+    private void processRootField(Element root) {
+        if(!hasDataField(root)){
+            String id = DOM.createUniqueId();
+            root.setAttribute(DATA_FIELD, id);
+            root.setAttribute(ROOT_ELEMENT,"true");
+            templateFieldsMap.put(id, new MaterialPanel());
+        }else if(!templateFieldsMap.containsKey(getDataFieldValue(root))){
+            String id = DOM.createUniqueId();
+            root.setAttribute(DATA_FIELD, id);
+            root.setAttribute(ROOT_ELEMENT,"true");
+            root.setAttribute(HTML_FRAGMENT,"true");
+            templateFieldsMap.put(id, new MaterialPanel());
+        }
 
     }
 
-    private void process(Widget parent, Element root) {
+    private void process(Boolean parent, Element root) {
         if (root.getNodeType() == Node.ELEMENT_NODE) {
-            if (helper.isWidgetSupported((root).getTagName())) {
+            if (isMaterialWidget(root, templateFieldsMap)) {
+                parent = true;
                 if (hasDataField(root)) {
                     Widget childAsWidget = getDataFieldedWidget(root, templateFieldsMap);
-                    //copyWidgetAttrsAndSetProperties(root, childAsWidget);
-                    //TODO
-                    //addWidgetToParent(parent, childAsWidget);
-                    root.setInnerHTML(getRootContent(root));
-                    parent = childAsWidget;
+                    checkIfMaterialSideNav(childAsWidget);
                 } else {
-                    parent = doMaterialWidget(parent, root);
+                    doMaterialWidget(parent, root);
                 }
+            }else{
+                parent = false;
             }
         }
-
         for (Node c : getNodeChildren(root)) {
             process(parent, (Element) c);
         }
     }
 
-    private String getRootContent(Element root) {
-        if(root.hasAttribute(ROOT_ELEMENT)){
-            return root.getInnerHTML();
-        }else{
-            return getElementByDataField(original, getDataFieldValue(root)).getResult().getElement().getInnerHTML();
+    private void checkIfMaterialSideNav(Widget childAsWidget) {
+        if(childAsWidget instanceof MaterialSideNav){
+            String activator = childAsWidget.getElement().getAttribute("id");
+            childAsWidget.getElement().setId("");
+            childAsWidget.getElement().setAttribute(ACTIVATOR, activator);
         }
     }
 
-    private Widget doMaterialWidget(Widget parent, Element element) {
-        Widget candidate = null;
-        if (parent == null || needsToBeInitExplicitly(element)) {
-            candidate = processMaterialWidget(element);
+    private Boolean doMaterialWidget(Boolean parent, Element element) {
+        Boolean result = false;
+        if (parent == false || needsToBeInitExplicitly(getMaterialWidgetFieldValue(element))) {
+            result = processMaterialWidget(element);
         }
-        return candidate;
+        return result;
 
     }
 
-    private Widget processMaterialWidget(Element element) {
-        Widget candidate;
+    private Boolean processMaterialWidget(Element element) {
+        Boolean result = false;
         Optional<Tuple<Widget, Boolean>> maybeExist = helper.invoke(element);
         if (maybeExist.isPresent()) {
             if (maybeExist.get().getValue()) {
-                candidate = maybeExist.get().getKey();
+                result = true;
+                Widget candidate = maybeExist.get().getKey();
                 String id = DOM.createUniqueId();
+
+                candidate.getElement().setAttribute(DATA_FIELD, id);
                 element.setAttribute(DATA_FIELD, id);
+                checkIfMaterialSideNav(candidate);
                 templateFieldsMap.put(id, candidate);
             } else {
                 throw new RuntimeException("Widget doesn't exist " + element.getTagName());
@@ -112,6 +136,7 @@ public class GwtMaterialPreInit {
         } else {
             throw new RuntimeException("Widget doesn't exist " + element.getTagName());
         }
-        return candidate;
+        return result;
     }
+
 }

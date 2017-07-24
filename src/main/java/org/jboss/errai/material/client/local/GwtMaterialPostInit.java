@@ -26,21 +26,13 @@ import org.jboss.errai.ioc.client.container.IOC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.jboss.errai.material.client.local.GwtMaterialUtil.ROOT_ELEMENT;
-import static org.jboss.errai.material.client.local.GwtMaterialUtil.addWidgetToParent;
-import static org.jboss.errai.material.client.local.GwtMaterialUtil.copyWidgetAttrsAndSetProperties;
-import static org.jboss.errai.material.client.local.GwtMaterialUtil.getDataFieldValue;
-import static org.jboss.errai.material.client.local.GwtMaterialUtil.getDataFieldedWidget;
-import static org.jboss.errai.material.client.local.GwtMaterialUtil.getElementByDataField;
-import static org.jboss.errai.material.client.local.GwtMaterialUtil.getNodeChildren;
-import static org.jboss.errai.material.client.local.GwtMaterialUtil.getTag;
-import static org.jboss.errai.material.client.local.GwtMaterialUtil.hasDataField;
-
+import static org.jboss.errai.material.client.local.GwtMaterialUtil.*;
 
 /**
  * @author Dmitrii Tikhomirov <chani@me.com>
@@ -57,41 +49,36 @@ public class GwtMaterialPostInit {
 
     private Widget root;
 
+    private final Map<String, Widget> temp = new HashMap();
+
 
     GwtMaterialPostInit(final Element elm, final String content, final Map<String, Widget> map) {
         this.templateFieldsMap = map;
-        this.original.setInnerHTML(content);
-        if (hasDataField(elm)) {
-            root = getDataFieldedWidget(elm, templateFieldsMap);
-            if (elm.hasAttribute(ROOT_ELEMENT)) {
-                GwtMaterialUtil.TaggedElement result = getElementByDataField(original, getDataFieldValue(elm)).getResult();
-                if (result != null) {
-                    root.getElement().setInnerHTML(result.getElement().getInnerHTML());
-                } else {
-                    root.getElement().setInnerHTML(content);
-                }
-                elm.removeAllChildren();
-            } else {
-                root.getElement().setInnerHTML(getElementByDataField(original, getDataFieldValue(elm)).getResult().getElement().getInnerHTML());
-            }
-            process(root.getElement());
-            if (elm.hasAttribute(ROOT_ELEMENT)) {
-                elm.removeAttribute(ROOT_ELEMENT);
-                getNodeChildren(root.getElement()).forEach(child -> elm.appendChild(child));
-            }
 
-        } else {
-            process(elm);
+        map.forEach((k, v) -> {
+            temp.put(k, v);
+        });
+        root = getDataFieldedWidget(elm, temp);
+        root.getElement().setInnerHTML(elm.getInnerHTML());
+        this.original = elm;
+
+        //logger.warn("root " + root.getElement().getInnerHTML());
+        process(root.getElement());
+        if (root.getElement().hasAttribute(ROOT_ELEMENT)) {
+            elm.removeAllChildren();
+            getNodeChildren(root.getElement().hasAttribute(HTML_FRAGMENT) == true ? root.getElement() :
+                    root.getElement().getFirstChildElement()).forEach(c -> elm.appendChild(c));
         }
     }
 
 
-    private Tuple<Widget, Element> process(Element element) {
-        List<Tuple<Widget, Element>> list = new LinkedList<>();
-        Tuple<Widget, Element> result = new Tuple<>();
+    private Result process(Element element) {
+        List<Result> list = new LinkedList<>();
+        Result result = new Result();
         if (element.getNodeType() == 1) {
-            if (GwtMaterialUtil.isMaterialWidget(element, templateFieldsMap)) {
+            if (GwtMaterialUtil.isMaterialWidget(element, temp)) {
                 Widget child = getWidget(element);
+
                 if (GwtMaterialUtil.hasСhildren(element)) {
                     for (Node c : getNodeChildren(element)) {
                         list.add(process((Element) c));
@@ -99,16 +86,44 @@ public class GwtMaterialPostInit {
                 }
                 element.removeAllChildren();
                 list.forEach(l -> {
-                    if (l.getKey() != null) {
-                        addWidgetToParent(child, l.getKey(), templateFieldsMap);
-                    } else if (l.getValue() != null) {
-                        child.getElement().appendChild(l.getValue());
+                    if (l.getWidget() != null) {
+                        addWidgetToParent(child, l.getWidget(), temp);
+                    } else if (l.getElement() != null) {
+                        child.getElement().appendChild(l.getElement());
+                    }else if (l.getNode() != null) {
+                        child.getElement().setInnerText(l.getNode().getNodeValue());
                     }
                 });
 
-                result.setKey(child);
+                copyWidgetAttrsAndSetProperties(element, child);
+
+                result.setWidget(child);
+                result.setElement(element);
+            } else {
+                if (hasDataField(element)) {
+                    result.setWidget(templateFieldsMap.get(getDataFieldValue(element)));
+                }
+                result.setElement(element);
+                if (GwtMaterialUtil.hasСhildren(element)) {
+                    for (Node c : getNodeChildren(element)) {
+                        list.add(process((Element) c));
+                    }
+                }
+
+                list.forEach(l -> {
+                    if (l.getWidget() != null) {
+                        if (result.getWidget() != null) {
+                            element.replaceChild(result.getWidget().getElement(), result.getElement());
+                        }
+                    }
+                });
+            }
+        }else if(element.getNodeType() == 3) {
+            if(!isStringBlank(element.getInnerText())){
+                result.setNode(element);
             }
         }
+
         return result;
     }
 
@@ -116,22 +131,21 @@ public class GwtMaterialPostInit {
         if (hasDataField(element)) {
             String id = GwtMaterialUtil.getDataFieldValue(element);
             Widget candidate = templateFieldsMap.get(id);
-            copyWidgetAttrsAndSetProperties(element, candidate);
+            candidate.getElement().setAttribute(DATA_FIELD, id);
+
             return candidate;
         } else {
             Optional<Tuple<Widget, Boolean>> maybeExist = helper.invoke(element);
             if (maybeExist.isPresent()) {
                 if (maybeExist.get().getValue()) {
                     Widget candidate = maybeExist.get().getKey();
-                    copyWidgetAttrsAndSetProperties(element, candidate);
                     return candidate;
-                // this widget is material but it doesn't extends MaterialWidget
-                }else{
+                    // this widget is material but it doesn't extends MaterialWidget
+                } else {
                     Widget candidate = maybeExist.get().getKey();
-                    copyWidgetAttrsAndSetProperties(element, candidate);
                     return candidate;
                 }
-            }else if(getTag(element).equals("materialtooltip")){
+            } else if (getTag(element).equals("materialtooltip")) { //TODO if data-field
                 return processMaterialTooltip(element);
             }
         }
@@ -155,7 +169,7 @@ public class GwtMaterialPostInit {
                 materialTooltip.setPosition((Position) GwtMaterialUtil.parseAttrValue(Position.class, element.getAttribute("position")));
             }
             element.removeAllChildren(); // prevent iterating child twice
-           return widget;
+            return widget;
         }
         throw new IllegalStateException("MaterialTooltip must contain only one child widget");
 

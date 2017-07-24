@@ -100,7 +100,7 @@ public class CommonMaterialWidgetGenerator extends MaterialWidgetGenerator {
         invoke = jc.method(JMod.PUBLIC, jCodeModel.ref(Optional.class).narrow(jCodeModel.ref(Widget.class)), "invoke");
         invoke.param(Element.class, "tagged");
         invoke.annotate(Override.class);
-        invoke.body().decl(jCodeModel.ref(String.class), "tag").init(JExpr.ref("tagged").invoke("getTagName").invoke("toLowerCase").invoke("replaceAll").arg("-").arg(""));
+        invoke.body().decl(jCodeModel.ref(String.class), "tag").init(JExpr.ref("tagged").invoke("getAttribute").arg("material-widget").invoke("toLowerCase").invoke("replaceAll").arg("-").arg(""));
         invoke.body().decl(jCodeModel.ref(Widget.class), "result").init(JExpr._null());
     }
 
