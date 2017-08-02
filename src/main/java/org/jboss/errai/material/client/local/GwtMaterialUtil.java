@@ -102,7 +102,7 @@ public class GwtMaterialUtil {
     static final String ROOT_ELEMENT = "root_element";
     static final String HTML_FRAGMENT = "html_fragment";
 
-    private static final String[] tag_attr_white_list = {"href", "style", "activates", DATA_ACTIVATES};
+    private static final String[] tag_attr_white_list = {"target", "href", "style", "activates", DATA_ACTIVATES};
 
     /*
     * We have to init some widgets explicitly

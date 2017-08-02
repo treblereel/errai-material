@@ -32,6 +32,7 @@
 
 package org.jboss.errai.material.client.local;
 
+import gwt.material.design.client.MaterialDesignBase;
 import gwt.material.design.client.MaterialDesignDebugBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,9 +42,8 @@ import org.slf4j.LoggerFactory;
  *
  * Created by treblereel on 3/7/17.
  */
-public class GwtMaterialInitializer extends MaterialDesignDebugBase {
+public class GwtMaterialInitializer extends MaterialDesignBase {
     private static GwtMaterialInitializer INSTANCE = new GwtMaterialInitializer();
-    private final Logger logger = LoggerFactory.getLogger(GwtMaterialInitializer.class);
     private boolean loaded = false;
 
     public static GwtMaterialInitializer get(){
@@ -51,7 +51,6 @@ public class GwtMaterialInitializer extends MaterialDesignDebugBase {
     }
 
     public void check() {
-        logger.warn("GwtMaterialInitializer check");
         if (!loaded) {
             load();
             loaded = true;

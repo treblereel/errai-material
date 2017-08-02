@@ -8,10 +8,8 @@
 
     <inherits name="org.jboss.errai.ui.UI"/>
 
-    <inherits name="gwt.material.design.GwtMaterialWithJQueryDebug"/>
-    <inherits name="gwt.material.design.GwtMaterialDesignBasic" />
+    <inherits name="gwt.material.design.GwtMaterialWithJQuery"/>
     <inherits name="gwt.material.design.addins.GwtMaterialAddins" />
-    <inherits name="gwt.material.design.themes.ThemeGreen"/>
     <inherits name="gwt.material.design.jquery.JQuery" />
 
     <source path="client" />
