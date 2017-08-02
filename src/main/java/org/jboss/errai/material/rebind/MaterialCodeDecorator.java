@@ -117,11 +117,6 @@ public class MaterialCodeDecorator extends IOCDecoratorExtension<Templated> {
             controller.addInitializationStatements(preInitializationStatements);
         }
 
-        final String parentOfRootTemplateElementVarName = "parentElementForTemplateOf" + decorable.getDecorableDeclaringType().getName();
-        final Statement rootTemplateElement = Stmt.invokeStatic(TemplateUtil.class, "getRootTemplateElement",
-                Stmt.loadVariable(parentOfRootTemplateElementVarName));
-        final String templateVarName = "templateFor" + decorable.getDecorableDeclaringType().getName();
-
         postInitializationStatements.add(StringStatement.of("}"));
 
         controller.addInitializationStatementsToEnd(postInitializationStatements);
@@ -237,13 +232,10 @@ public class MaterialCodeDecorator extends IOCDecoratorExtension<Templated> {
                     newObject(new TypeLiteral<LinkedHashMap<String, Widget>>() {}))
             );
             final Statement fieldsMap = Stmt.loadVariable(fieldsMapVarName);
-
             facade.generateComponentCompositions(decorable, initStmts, component, rootTemplateElement,
                     loadVariable(dataFieldElementsVarName), fieldsMap, loadVariable(dataFieldMetasVarName));
-
             facade.generateEventHandlerMethodClasses(decorable, controller, initStmts, dataFieldElementsVarName, fieldsMap);
-
-            facade.generateAfterTemplateInitInvoke(initStmts, fieldsMap);
+            facade.generateAfterTemplateInitInvoke(initStmts, TemplatedCodeDecorator.getTemplateFileName(decorable.getDecorableDeclaringType()), fieldsMap);
 
         }
 

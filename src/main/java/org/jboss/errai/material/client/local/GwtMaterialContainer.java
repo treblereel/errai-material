@@ -18,6 +18,7 @@ package org.jboss.errai.material.client.local;
 
 import com.google.gwt.user.client.ui.RootPanel;
 import gwt.material.design.client.ui.MaterialPanel;
+import gwt.material.design.client.ui.html.Div;
 
 import javax.ejb.Startup;
 import javax.inject.Singleton;
@@ -29,7 +30,7 @@ import javax.inject.Singleton;
 
 @Startup
 @Singleton
-public class GwtMaterialContainer extends MaterialPanel{
+public class GwtMaterialContainer extends Div{
 
 
     public GwtMaterialContainer(){

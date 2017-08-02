@@ -163,7 +163,7 @@ public class ErraiUITemplateDecoratorFacade {
                                        final Statement fieldsMetaMap) {
 
         final boolean composite = decorable.getEnclosingInjectable().getInjectedType().isAssignableTo(Composite.class);
-
+        final String templateFileName = TemplatedCodeDecorator.getTemplateFileName(decorable.getDecorableDeclaringType());
 
     /*
      * Merge each field's Widget Element into the DOM in place of the
@@ -186,15 +186,10 @@ public class ErraiUITemplateDecoratorFacade {
         initStmts.add(Stmt.declareVariable(Element.class).named(ROOT_ELEMENT).
                 initializeWith(rootTemplateElement));
 
-/*        initStmts.add(invokeStatic(GwtMaterialUtil.class, "compositeComponentReplace", Stmt.loadVariable(ROOT_ELEMENT), decorable.getDecorableDeclaringType()
-                        .getFullyQualifiedName(), TemplatedCodeDecorator.getTemplateFileName(decorable.getDecorableDeclaringType()),
-                dataFieldElements, fieldsMetaMap, fieldsMap));*/
-
-
-        initStmts.add(invokeStatic(GwtMaterialUtil.class, "beforeTemplateInitInvoke", Stmt.loadVariable(ROOT_ELEMENT), Stmt.loadVariable(MaterialCodeDecorator.FINAL_HTML_CONTENT), fieldsMap));
+        initStmts.add(invokeStatic(GwtMaterialUtil.class, "beforeTemplateInitInvoke", Stmt.loadVariable(ROOT_ELEMENT), Stmt.loadVariable(MaterialCodeDecorator.FINAL_HTML_CONTENT), templateFileName, fieldsMap));
 
         initStmts.add(invokeStatic(GwtMaterialUtil.class, "compositeComponentReplace", Stmt.loadVariable(ROOT_ELEMENT), decorable.getDecorableDeclaringType()
-                        .getFullyQualifiedName(), TemplatedCodeDecorator.getTemplateFileName(decorable.getDecorableDeclaringType()),
+                        .getFullyQualifiedName(), templateFileName,
                 dataFieldElements, fieldsMetaMap, fieldsMap));
 
 
@@ -208,9 +203,6 @@ public class ErraiUITemplateDecoratorFacade {
         } else {
             initMethodName = "initTemplated";
         }
-
-        final String parentOfRootTemplateElementVarName = "parentElementForTemplateOf" + decorable.getDecorableDeclaringType().getName();
-
 
         initStmts.add(Stmt.invokeStatic(TemplateUtil.class, initMethodName, component, Stmt.loadVariable(ROOT_ELEMENT),
                 Stmt.nestedCall(fieldsMap).invoke("values")));
@@ -228,7 +220,7 @@ public class ErraiUITemplateDecoratorFacade {
         }
     }
 
-    void generateAfterTemplateInitInvoke(final List<Statement> initStmts, final Statement fieldsMap) {
-        initStmts.add(invokeStatic(GwtMaterialUtil.class, "afterTemplateInitInvoke", Stmt.loadVariable(ROOT_ELEMENT), Stmt.loadVariable(MaterialCodeDecorator.FINAL_HTML_CONTENT), fieldsMap));
+    void generateAfterTemplateInitInvoke(final List<Statement> initStmts, final String templateFileName, final Statement fieldsMap) {
+        initStmts.add(invokeStatic(GwtMaterialUtil.class, "afterTemplateInitInvoke", Stmt.loadVariable(ROOT_ELEMENT), Stmt.loadVariable(MaterialCodeDecorator.FINAL_HTML_CONTENT), templateFileName, fieldsMap));
     }
 }

@@ -58,6 +58,8 @@ import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.ui.Widget;
 import gwt.material.design.client.base.MaterialWidget;
 import gwt.material.design.client.ui.MaterialBreadcrumb;
+import gwt.material.design.client.ui.MaterialCollapsibleBody;
+import gwt.material.design.client.ui.MaterialCollapsibleItem;
 import gwt.material.design.client.ui.MaterialDropDown;
 import gwt.material.design.client.ui.MaterialIcon;
 import gwt.material.design.client.ui.MaterialListBox;
@@ -346,11 +348,15 @@ public class GwtMaterialUtil {
             addWidgetItemToMaterialDropDown((MaterialDropDown) parent, child);
         } else if (parent.getClass().equals(MaterialTab.class)) {
             addWidgetItemToUnorderedList((MaterialTab) parent, child);
-        } else if (parent.getClass().equals(MaterialNavBar.class)) {
-            addWidgetToMaterialNavBar(parent, child);
+        } else if (parent.getClass().equals(MaterialCollapsibleItem.class)) {
+            ((MaterialCollapsibleItem) parent).add(child);
+        } else if (parent.getClass().equals(MaterialCollapsibleBody.class)) {
+            ((MaterialCollapsibleBody) parent).add(child);
         } else if (child instanceof MaterialNavBar) {
             ((MaterialWidget) parent).add(child);
-        } else if (child instanceof MaterialSideNav) {
+        }else if (child instanceof MaterialNavBar) {
+            ((MaterialWidget) parent).add(child);
+        }  else if (child instanceof MaterialSideNav) {
             addMaterialSideNavToParent(parent, child, map);
         } else {
             ((MaterialWidget) parent).add(child);
@@ -389,15 +395,15 @@ public class GwtMaterialUtil {
     }
 
 
-    public static void afterTemplateInitInvoke(Element root, String content, Map<String, Widget> templateFieldsMap) {
+    public static void afterTemplateInitInvoke(Element root, String content, final String templateFile, Map<String, Widget> templateFieldsMap) {
         if (hasСhildren(root) || !Strings.isNullOrEmpty(content)) {
-            new GwtMaterialPostInit(root, content, templateFieldsMap);
+            new GwtMaterialPostInit(root, content, templateFile, templateFieldsMap);
         }
     }
 
-    public static void beforeTemplateInitInvoke(Element root, String content, Map<String, Widget> templateFieldsMap) {
+    public static void beforeTemplateInitInvoke(Element root, String content, final String templateFile, Map<String, Widget> templateFieldsMap) {
         if (hasСhildren(root) || !Strings.isNullOrEmpty(content)) {
-            new GwtMaterialPreInit(root, content, templateFieldsMap);
+            new GwtMaterialPreInit(root, content, templateFile, templateFieldsMap);
         }
 
     }

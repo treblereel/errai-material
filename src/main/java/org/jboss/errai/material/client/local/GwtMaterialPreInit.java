@@ -39,14 +39,17 @@ public class GwtMaterialPreInit {
 
     private Logger logger = LoggerFactory.getLogger(this.getClass().getSimpleName());
 
+    private final String templateFilename;
+
     private final MaterialWidgetFactoryHelper helper = IOC.getBeanManager().lookupBean(MaterialWidgetFactoryHelper.class).getInstance();
 
     private Map<String, Widget> templateFieldsMap;
 
     private Element original;
 
-    GwtMaterialPreInit(Element root, String content, Map<String, Widget> templateFieldsMap) {
+    GwtMaterialPreInit(Element root, String content, final String templateFilename, Map<String, Widget> templateFieldsMap) {
         this.templateFieldsMap = templateFieldsMap;
+        this.templateFilename = templateFilename;
         this.original = DOM.createDiv();
         this.original.setInnerHTML(content);
 
@@ -118,14 +121,11 @@ public class GwtMaterialPreInit {
     }
 
     private Boolean processMaterialWidget(Element element) {
-        Boolean result = false;
         Optional<Tuple<Widget, Boolean>> maybeExist = helper.invoke(element);
         if (maybeExist.isPresent()) {
             if (maybeExist.get().getValue()) {
-                result = true;
                 Widget candidate = maybeExist.get().getKey();
                 String id = DOM.createUniqueId();
-
                 candidate.getElement().setAttribute(DATA_FIELD, id);
                 element.setAttribute(DATA_FIELD, id);
                 checkIfMaterialSideNav(candidate);
@@ -136,7 +136,7 @@ public class GwtMaterialPreInit {
         } else {
             throw new RuntimeException("Widget doesn't exist " + element.getTagName());
         }
-        return result;
+        return true;
     }
 
 }

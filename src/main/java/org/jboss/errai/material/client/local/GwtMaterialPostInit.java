@@ -41,6 +41,8 @@ import static org.jboss.errai.material.client.local.GwtMaterialUtil.*;
 public class GwtMaterialPostInit {
     private final Logger logger = LoggerFactory.getLogger(this.getClass().getSimpleName());
 
+    private final String templateFilename;
+
     private final Map<String, Widget> templateFieldsMap;
 
     private final MaterialWidgetFactoryHelper helper = IOC.getBeanManager().lookupBean(MaterialWidgetFactoryHelper.class).getInstance();
@@ -52,8 +54,9 @@ public class GwtMaterialPostInit {
     private final Map<String, Widget> temp = new HashMap();
 
 
-    GwtMaterialPostInit(final Element elm, final String content, final Map<String, Widget> map) {
+    GwtMaterialPostInit(final Element elm, final String content, final String templateFilename,  Map<String, Widget> map) {
         this.templateFieldsMap = map;
+        this.templateFilename = templateFilename;
 
         map.forEach((k, v) -> {
             temp.put(k, v);
@@ -61,8 +64,6 @@ public class GwtMaterialPostInit {
         root = getDataFieldedWidget(elm, temp);
         root.getElement().setInnerHTML(elm.getInnerHTML());
         this.original = elm;
-
-        //logger.warn("root " + root.getElement().getInnerHTML());
         process(root.getElement());
         if (root.getElement().hasAttribute(ROOT_ELEMENT)) {
             elm.removeAllChildren();
@@ -131,8 +132,10 @@ public class GwtMaterialPostInit {
         if (hasDataField(element)) {
             String id = GwtMaterialUtil.getDataFieldValue(element);
             Widget candidate = templateFieldsMap.get(id);
+            if(candidate == null){
+                throw new IllegalArgumentException("There is no widget with data-field=["+id+"] declareted in template " + templateFilename);
+            }
             candidate.getElement().setAttribute(DATA_FIELD, id);
-
             return candidate;
         } else {
             Optional<Tuple<Widget, Boolean>> maybeExist = helper.invoke(element);
@@ -149,7 +152,7 @@ public class GwtMaterialPostInit {
                 return processMaterialTooltip(element);
             }
         }
-        throw new RuntimeException("Can't find widget " + element.getTagName());
+        throw new RuntimeException("Can't find widget " + element.getTagName() + " in template " + templateFilename);
     }
 
     private Widget processMaterialTooltip(Element element) {
