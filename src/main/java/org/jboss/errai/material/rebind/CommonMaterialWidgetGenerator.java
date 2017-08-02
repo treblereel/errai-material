@@ -105,23 +105,9 @@ public class CommonMaterialWidgetGenerator extends MaterialWidgetGenerator {
     }
 
     private void constractInvokeMethodBody(JCodeModel jCodeModel) {
-        invoke.body().decl(jCodeModel.ref(Optional.class).narrow(jCodeModel.ref(MaterialWidgetDefinition.class)), "def").init(JExpr._this().invoke("getWidgetDefIfExist").arg(JExpr.ref("tag")));
-        JBlock jInvokeBlock = invoke.body()._if(JExpr.ref("def").invoke("isPresent").eq(JExpr.lit(true)).cand(JExpr.ref("def").invoke("get").invoke("getExtendsMaterialWidget").eq(JExpr.lit(true))))
-                ._then();
-        jInvokeBlock.decl(jCodeModel.ref(MaterialWidget.class), "candidate").init(JExpr.cast(jCodeModel.ref(MaterialWidget.class), JExpr.ref("result")));
-        JBlock jInvokeBlockCandidate = jInvokeBlock._if(JExpr.ref("candidate").invoke("getInitialClasses").ne(JExpr._null()))._then();
-        jInvokeBlockCandidate.decl(jCodeModel.ref(StringBuffer.class), "sb").init(JExpr._new(jCodeModel.ref(StringBuffer.class)));
-        jInvokeBlockCandidate.forEach(jCodeModel.ref(String.class), "css", JExpr.ref("candidate").invoke("getInitialClasses")).body()
-                .add(JExpr.ref("sb").invoke("append").arg(JExpr.ref("css")).invoke("append").arg(" "));
-        jInvokeBlockCandidate.add(JExpr.ref("candidate").invoke("getElement").invoke("setAttribute").arg("class").arg(JExpr.ref("sb").invoke("toString").invoke("trim")));
-
         JClass optional = jCodeModel.directClass(Optional.class.getCanonicalName());
-        JClass gwtMaterialUtil = jCodeModel.directClass(GwtMaterialUtil.class.getCanonicalName());
-
         JBlock returnBlock = invoke.body()._if(JExpr.ref("result").ne(JExpr._null()))._then();
-        returnBlock.directStatement("org.jboss.errai.material.client.local.GwtMaterialUtil.copyWidgetAttrsAndSetProperties(tagged, result);");
         returnBlock._return(optional.staticInvoke("of").arg(JExpr.ref("result")));
-
         invoke.body()._return(optional.staticInvoke("empty"));
     }
 
